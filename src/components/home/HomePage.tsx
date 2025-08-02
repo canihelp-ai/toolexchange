@@ -16,7 +16,7 @@ const transformTool = (dbTool: any): Tool => ({
     email: dbTool.owner.email,
     name: dbTool.owner.name,
     phone: dbTool.owner.phone,
-    avatar: dbTool.owner.avatar_url,
+    avatar: dbTool.owner.avatar_url || 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1',
     location: dbTool.owner.location,
     bio: dbTool.owner.bio,
     role: dbTool.owner.role,
@@ -35,7 +35,7 @@ const transformTool = (dbTool: any): Tool => ({
   category: dbTool.category,
   brand: dbTool.brand,
   model: dbTool.model,
-  images: dbTool.tool_images?.map((img: any) => img.image_url) || [],
+  images: dbTool.tool_images?.map((img: any) => img.image_url) || ['https://images.pexels.com/photos/209274/pexels-photo-209274.jpeg?auto=compress&cs=tinysrgb&w=800&h=600&dpr=1'],
   location: dbTool.location,
   condition: dbTool.condition,
   specifications: dbTool.specifications || {},
@@ -97,6 +97,7 @@ const HomePage: React.FC = () => {
   const loadTools = async () => {
     setIsLoading(true);
     setError(null);
+    console.log('Loading tools from database...');
     try {
       const { data, error } = await supabase
         .from('tools')
@@ -108,11 +109,15 @@ const HomePage: React.FC = () => {
         `)
         .eq('status', 'active');
 
+      console.log('Raw database response:', { data, error });
+
       if (error) {
         console.error('Error loading tools:', error);
         setError('Failed to load tools. Please try again.');
       } else if (data) {
+        console.log('Number of tools found:', data.length);
         const transformedTools = data.map(transformTool);
+        console.log('Transformed tools:', transformedTools);
         setTools(transformedTools);
       }
     } catch (error) {
@@ -125,6 +130,7 @@ const HomePage: React.FC = () => {
 
   const applyFiltersAndSearch = () => {
     let filtered = [...tools];
+    console.log('Applying filters to tools:', filtered.length);
 
     // Apply search
     if (searchQuery.trim()) {
@@ -141,7 +147,7 @@ const HomePage: React.FC = () => {
     }
     if (filters.priceRange) {
       filtered = filtered.filter(tool => {
-        const price = tool.daily_rate;
+        const price = tool.pricing.daily;
         return price >= filters.priceRange![0] && price <= filters.priceRange![1];
       });
     }
@@ -151,19 +157,19 @@ const HomePage: React.FC = () => {
       );
     }
     if (filters.insurance) {
-      filtered = filtered.filter(tool => tool.insurance_available);
+      filtered = filtered.filter(tool => tool.insurance.available);
     }
     if (filters.operatorSupport) {
       if (filters.operatorSupport === 'required') {
-        filtered = filtered.filter(tool => tool.operator_required);
+        filtered = filtered.filter(tool => tool.operatorSupport.required);
       } else if (filters.operatorSupport === 'available') {
-        filtered = filtered.filter(tool => tool.operator_available);
+        filtered = filtered.filter(tool => tool.operatorSupport.available);
       } else if (filters.operatorSupport === 'not_needed') {
-        filtered = filtered.filter(tool => !tool.operator_available);
+        filtered = filtered.filter(tool => !tool.operatorSupport.available);
       }
     }
     if (filters.rentalType) {
-      filtered = filtered.filter(tool => tool.pricing_type === filters.rentalType);
+      filtered = filtered.filter(tool => tool.pricing.type === filters.rentalType);
     }
     if (filters.rating) {
       filtered = filtered.filter(tool => tool.rating >= filters.rating!);
@@ -185,6 +191,7 @@ const HomePage: React.FC = () => {
       }
     });
 
+    console.log('Filtered tools:', filtered.length);
     setFilteredTools(filtered);
   };
 
