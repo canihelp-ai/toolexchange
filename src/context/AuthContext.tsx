@@ -173,10 +173,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         password
       });
 
-      if (error) throw error;
+      if (error) {
         if (error.message === 'Invalid login credentials') {
           throw new Error('Invalid email or password. Please check your credentials and try again.');
         }
+        throw error;
+      }
       console.log('Login successful');
     } catch (err) {
       console.error('Login failed:', err);
@@ -253,22 +255,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       throw err;
     }
   };
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        session,
-        isLoading,
-        error,
-        login,
-        register,
-        logout
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
-};
+
+  const updatePassword = async (password: string) => {
+    try {
+      console.log('Updating password');
+      setIsLoading(true);
+      setError(null);
+      
+      const { error } = await supabase.auth.updateUser({
+        password: password
+      });
+
       if (error) throw error;
       console.log('Password updated successfully');
     } catch (err) {
@@ -280,18 +277,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const updatePassword = async (password: string) => {
-    try {
-      console.log('Updating password');
-      setIsLoading(true);
-      setError(null);
-      
-      const { error } = await supabase.auth.updateUser({
-        password: password
-      });
-export const useAuth = () => {
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        session,
+        isLoading,
+        error,
+        login,
+        register,
+        logout,
         sendPasswordResetEmail,
         updatePassword
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
