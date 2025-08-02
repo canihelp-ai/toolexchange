@@ -86,25 +86,37 @@ const ProfilePage: React.FC = () => {
   };
 
   const handleAvatarUpload = async () => {
-    if (!selectedFile) return;
-    
     if (!user) return;
+    if (!selectedFile) return;
 
     setIsUpdating(true);
     setUpdateError(null);
 
     try {
+      // Client-side validation for file size (5MB limit)
+      if (selectedFile.size > 5 * 1024 * 1024) {
+        setUpdateError('File size must be less than 5MB');
+        return;
+      }
+
+      // Client-side validation for file type
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+      if (!allowedTypes.includes(selectedFile.type)) {
+        setUpdateError('Only JPEG, PNG, and WebP images are allowed');
+        return;
+      }
+
       // Create unique filename
       const fileExt = selectedFile.name.split('.').pop();
-      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
-      const filePath = fileName;
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `${user.id}/${fileName}`;  // Store in user-specific folder
 
       // Upload file to Supabase storage
       const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(filePath, selectedFile, {
           cacheControl: '3600',
-          upsert: false
+          upsert: true  // Allow overwriting
         });
 
       if (uploadError) throw uploadError;
