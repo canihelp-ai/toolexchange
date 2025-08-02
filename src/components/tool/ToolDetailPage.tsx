@@ -283,20 +283,31 @@ const ToolDetailPage: React.FC = () => {
       return;
     }
 
+    if (!user?.id || !tool?.ownerId) {
+      alert('Missing required user information');
+      return;
+    }
+
+    // Check if the user is trying to message themselves
+    if (user.id === tool.ownerId) {
+      alert("You can't message yourself");
+      return;
+    }
+
     setIsSendingMessage(true);
 
     try {
-      // Create or find existing chat
+      // Find existing chat (use .maybeSingle() instead of .single())
       const { data: existingChat } = await supabase
         .from('chats')
         .select('id')
         .contains('participants', [user?.id, tool?.ownerId])
-        .single();
+        .maybeSingle(); // This allows for 0 or 1 row
 
       let chatId = existingChat?.id;
 
       if (!chatId) {
-        // Create new chat
+        // Create new chat only if one doesn't exist
         const { data: newChat, error: chatError } = await supabase
           .from('chats')
           .insert([{
