@@ -7,6 +7,7 @@ import Button from '../ui/Button';
 import Rating from '../ui/Rating';
 import { formatCurrency } from '../../utils/format';
 import { Tool } from '../../types';
+import { useCurrency } from '../../context/CurrencyContext';
 
 interface ToolCardProps {
   tool: Tool;
@@ -20,6 +21,7 @@ const ToolCard: React.FC<ToolCardProps> = ({
   isFavorited = false,
 }) => {
   const navigate = useNavigate();
+  const { formatCurrency } = useCurrency();
 
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.stopPropagation();

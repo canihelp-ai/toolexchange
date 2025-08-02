@@ -10,6 +10,7 @@ import DashboardLayout from './components/dashboard/DashboardLayout';
 import DashboardHome from './components/dashboard/DashboardHome';
 import DashboardMessages from './components/dashboard/DashboardMessages';
 import DashboardReviews from './components/dashboard/DashboardReviews';
+import DashboardBookings from './components/dashboard/DashboardBookings';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import ProfilePage from './pages/ProfilePage';
 import SettingsPage from './pages/SettingsPage';
@@ -63,6 +64,11 @@ const AppContent: React.FC = () => {
         <Route path="/dashboard/reviews" element={
           <DashboardLayout>
             <DashboardReviews />
+          </DashboardLayout>
+        } />
+        <Route path="/dashboard/bookings" element={
+          <DashboardLayout>
+            <DashboardBookings />
           </DashboardLayout>
         } />
       </Routes>

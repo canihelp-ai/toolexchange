@@ -15,9 +15,11 @@ import Badge from '../ui/Badge';
 import Rating from '../ui/Rating';
 import { useAuth } from '../../context/AuthContext';
 import { formatCurrency } from '../../utils/format';
+import { useCurrency } from '../../context/CurrencyContext';
 
 const DashboardHome: React.FC = () => {
   const { user } = useAuth();
+  const { formatCurrency } = useCurrency();
 
   const renderRenterDashboard = () => (
     <div className="space-y-8">
