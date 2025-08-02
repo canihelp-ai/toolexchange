@@ -6,11 +6,13 @@ import ToolCard from './ToolCard';
 import FilterModal from './FilterModal';
 import { FilterOptions, Tool } from '../../types';
 import { useTools } from '../../hooks/useTools';
+import { useCurrency } from '../../context/CurrencyContext';
 import { useAuth } from '../../context/AuthContext';
 
 const HomePage: React.FC = () => {
   const { tools, isLoading: toolsLoading, error: toolsError, refetch } = useTools();
   const { session, user, isLoading: authLoading } = useAuth();
+  const { currency } = useCurrency();
   const [filteredTools, setFilteredTools] = useState<Tool[]>([]);
   const [filters, setFilters] = useState<FilterOptions>({});
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);

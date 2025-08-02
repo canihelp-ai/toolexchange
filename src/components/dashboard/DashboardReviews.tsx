@@ -7,6 +7,7 @@ import Badge from '../ui/Badge';
 import Rating from '../ui/Rating';
 import { useAuth } from '../../context/AuthContext';
 import { formatRelativeTime } from '../../utils/format';
+import { useCurrency } from '../../context/CurrencyContext';
 
 interface Review {
   id: string;
@@ -37,6 +38,7 @@ interface Review {
 
 const DashboardReviews: React.FC = () => {
   const { user } = useAuth();
+  const { formatCurrency } = useCurrency();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [filteredReviews, setFilteredReviews] = useState<Review[]>([]);
   const [activeTab, setActiveTab] = useState<'received' | 'given'>('received');

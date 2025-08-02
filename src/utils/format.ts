@@ -1,7 +1,7 @@
 import { format, formatDistanceToNow } from 'date-fns';
 
 export const formatCurrency = (amount: number, currency: 'USD' | 'JMD' = 'USD'): string => {
-  const exchangeRate = 157.5; // 1 USD = 157.5 JMD (approximate)
+  const exchangeRate = 160; // 1 USD = 160 JMD
   
   if (currency === 'JMD') {
     const jmdAmount = amount * exchangeRate;

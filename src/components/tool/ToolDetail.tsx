@@ -6,6 +6,7 @@ import Badge from '../ui/Badge';
 import Rating from '../ui/Rating';
 import { Tool, Booking } from '../../types';
 import { formatCurrency, formatDate } from '../../utils/format';
+import { useCurrency } from '../../context/CurrencyContext';
 
 interface ToolDetailProps {
   tool: Tool;
@@ -14,6 +15,7 @@ interface ToolDetailProps {
 }
 
 const ToolDetail: React.FC<ToolDetailProps> = ({ tool, onBook, onBid }) => {
+  const { formatCurrency } = useCurrency();
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
