@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Filter, Bell, User, Menu, MessageCircle, Settings, LogOut, Home, X } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 import Modal from '../ui/Modal';
