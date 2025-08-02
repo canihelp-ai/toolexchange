@@ -102,11 +102,11 @@ const HomePage: React.FC = () => {
   }, [tools, filters, searchQuery, sortBy]);
 
   const loadTools = async () => {
+    console.log('Loading tools from database...');
     setIsLoading(true);
     setError(null);
     
     try {
-      // Load tools - they should be publicly accessible
       const { data, error } = await supabase
         .from('tools')
         .select(`
@@ -119,26 +119,18 @@ const HomePage: React.FC = () => {
         .eq('status', 'active')
         .order('created_at', { ascending: false });
 
-      console.log('Tools loaded:', { 
-        dataCount: data?.length || 0, 
-        error: error?.message || 'none',
-        errorCode: error?.code || 'none'
-      });
-
       if (error) {
         console.error('Error loading tools:', error);
         setError(`Failed to load tools: ${error.message}`);
       } else if (data) {
-        console.log(`Successfully loaded ${data.length} tools`);
+        console.log('Tools loaded successfully:', data.length);
         const transformedTools = data.map(transformTool);
         setTools(transformedTools);
       } else {
-        console.log('No tools data returned');
         setTools([]);
       }
     } catch (error) {
       console.error('Error loading tools:', error);
-      
       setError('Failed to load tools. Please try again.');
     } finally {
       setIsLoading(false);
@@ -147,7 +139,6 @@ const HomePage: React.FC = () => {
 
   const applyFiltersAndSearch = () => {
     let filtered = [...tools];
-    console.log('Applying filters to tools:', filtered.length);
 
     // Apply search
     if (searchQuery.trim()) {
@@ -208,7 +199,6 @@ const HomePage: React.FC = () => {
       }
     });
 
-    console.log('Filtered tools:', filtered.length);
     setFilteredTools(filtered);
   };
 
