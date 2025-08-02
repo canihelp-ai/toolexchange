@@ -15,7 +15,6 @@ interface AuthContextType {
   logout: () => Promise<void>;
   sendPasswordResetEmail: (email: string) => Promise<void>;
   updatePassword: (password: string) => Promise<void>;
-  updatePassword: (password: string) => Promise<void>;
 }
 
 interface RegisterData {
@@ -284,25 +283,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const updatePassword = async (password: string) => {
-    try {
-      console.log('Updating password');
-      setState(prev => ({ ...prev, error: null }));
-      
-      const { error } = await supabase.auth.updateUser({
-        password: password
-      });
-
-      if (error) throw error;
-      console.log('Password updated successfully');
-    } catch (err) {
-      console.error('Password update failed:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to update password';
-      setState(prev => ({ ...prev, error: errorMessage }));
-      throw err;
-    }
-  };
-
   const value: AuthContextType = {
     user: state.user,
     session: state.session,
@@ -312,7 +292,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     register,
     logout,
     sendPasswordResetEmail,
-    updatePassword,
     updatePassword,
   };
 
