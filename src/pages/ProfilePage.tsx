@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Camera, Edit, MapPin, Phone, Mail, Calendar, Star, Shield, Award, User } from 'lucide-react';
+import { Camera, Edit, MapPin, Phone, Mail, Calendar, Star, Shield, Award, User, Upload, X } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
@@ -12,6 +12,9 @@ import { formatDate } from '../utils/format';
 const ProfilePage: React.FC = () => {
   const { user } = useAuth();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [editFormData, setEditFormData] = useState({
     name: user?.name || '',
     phone: user?.phone || '',
@@ -29,6 +32,40 @@ const ProfilePage: React.FC = () => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setEditFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+    }
+  };
+
+  const handleAvatarUpload = async () => {
+    if (!selectedFile) return;
+    
+    // TODO: Implement actual file upload to Supabase storage
+    console.log('Upload avatar:', selectedFile);
+    
+    // Clean up preview URL
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    
+    setIsAvatarModalOpen(false);
+    setSelectedFile(null);
+    setPreviewUrl(null);
+  };
+
+  const handleAvatarModalClose = () => {
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    setIsAvatarModalOpen(false);
+    setSelectedFile(null);
+    setPreviewUrl(null);
   };
 
   if (!user) {
@@ -54,7 +91,10 @@ const ProfilePage: React.FC = () => {
                 alt={user.name}
                 className="w-24 h-24 rounded-full object-cover"
               />
-              <button className="absolute bottom-0 right-0 p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors">
+              <button 
+                onClick={() => setIsAvatarModalOpen(true)}
+                className="absolute bottom-0 right-0 p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors"
+              >
                 <Camera size={16} />
               </button>
             </div>
@@ -246,6 +286,103 @@ const ProfilePage: React.FC = () => {
             </Button>
           </div>
         </form>
+      </Modal>
+
+      {/* Avatar Upload Modal */}
+      <Modal
+        isOpen={isAvatarModalOpen}
+        onClose={handleAvatarModalClose}
+        title="Change Profile Picture"
+        size="md"
+      >
+        <div className="space-y-6">
+          <div className="text-center">
+            <div className="relative inline-block">
+              <img
+                src={previewUrl || user.avatar_url || 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1'}
+                alt="Preview"
+                className="w-32 h-32 rounded-full object-cover mx-auto"
+              />
+              {previewUrl && (
+                <div className="absolute top-0 right-0 bg-green-500 text-white rounded-full p-1">
+                  <Check size={16} />
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Choose New Picture
+              </label>
+              <div className="flex items-center justify-center w-full">
+                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    <Upload className="w-8 h-8 mb-4 text-gray-500" />
+                    <p className="mb-2 text-sm text-gray-500">
+                      <span className="font-semibold">Click to upload</span> or drag and drop
+                    </p>
+                    <p className="text-xs text-gray-500">PNG, JPG or GIF (MAX. 5MB)</p>
+                  </div>
+                  <input
+                    type="file"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleFileSelect}
+                  />
+                </label>
+              </div>
+            </div>
+
+            {selectedFile && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                      <Upload size={16} className="text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-blue-900">{selectedFile.name}</p>
+                      <p className="text-xs text-blue-600">
+                        {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setSelectedFile(null);
+                      if (previewUrl) {
+                        URL.revokeObjectURL(previewUrl);
+                        setPreviewUrl(null);
+                      }
+                    }}
+                    className="text-blue-600 hover:text-blue-800"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="flex space-x-4">
+            <Button
+              variant="outline"
+              onClick={handleAvatarModalClose}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAvatarUpload}
+              className="flex-1"
+              disabled={!selectedFile}
+            >
+              Upload Picture
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   );
