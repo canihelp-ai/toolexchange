@@ -227,10 +227,6 @@ const HomePage: React.FC = () => {
     );
   };
 
-  const handleViewTool = (tool: Tool) => {
-    // Navigate to tool detail page
-    console.log('Viewing tool:', tool);
-  };
 
   const activeFiltersCount = Object.values(filters).filter(Boolean).length;
 
@@ -357,7 +353,6 @@ const HomePage: React.FC = () => {
               <ToolCard
                 key={tool.id}
                 tool={tool}
-                onView={handleViewTool}
                 onFavorite={handleFavorite}
                 isFavorited={favorites.includes(tool.id)}
               />

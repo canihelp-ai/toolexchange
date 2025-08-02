@@ -1,5 +1,6 @@
 import React from 'react';
 import { Heart, Shield, Wrench, MapPin, TrendingUp, Star } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import Card from '../ui/Card';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
@@ -9,28 +10,31 @@ import { Tool } from '../../types';
 
 interface ToolCardProps {
   tool: Tool;
-  onView: (tool: Tool) => void;
   onFavorite: (toolId: string) => void;
   isFavorited?: boolean;
 }
 
 const ToolCard: React.FC<ToolCardProps> = ({
   tool,
-  onView,
   onFavorite,
   isFavorited = false,
 }) => {
+  const navigate = useNavigate();
+
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onFavorite(tool.id);
   };
 
+  const handleViewTool = () => {
+    navigate(`/tool/${tool.id}`);
+  };
   return (
     <Card
       variant="elevated"
       padding="none"
       className="cursor-pointer transform hover:scale-105 transition-all duration-200 hover:shadow-lg"
-      onClick={() => onView(tool)}
+      onClick={handleViewTool}
     >
       <div className="relative">
         <img
@@ -130,7 +134,7 @@ const ToolCard: React.FC<ToolCardProps> = ({
             className="w-full"
             onClick={(e) => {
               e.stopPropagation();
-              onView(tool);
+              handleViewTool();
             }}
           >
             {tool.pricing.type === 'fixed' ? 'View Details' : 'Place Bid'}
