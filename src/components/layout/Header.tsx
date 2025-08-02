@@ -25,6 +25,14 @@ const Header: React.FC = () => {
     setIsProfileMenuOpen(false);
     if (action === 'logout') {
       logout();
+    } else if (action === 'dashboard') {
+      window.location.href = '/dashboard';
+    } else if (action === 'profile') {
+      // Navigate to profile page when implemented
+      console.log('Navigate to profile');
+    } else if (action === 'settings') {
+      // Navigate to settings page when implemented
+      console.log('Navigate to settings');
     }
   };
 

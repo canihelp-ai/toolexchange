@@ -83,32 +83,20 @@ const AuthModal: React.FC<AuthModalProps> = ({
     e.preventDefault();
     if (!validateForm()) return;
 
-    console.log(`Attempting ${mode} for:`, formData.email);
-    
-    try {
-      if (mode === 'login') {
-        const success = await login(formData.email, formData.password);
-        if (success) {
-          console.log('Login successful, closing modal');
-          onClose();
-        } else {
-          setErrors({ general: 'Invalid email or password' });
-        }
-      } else if (mode === 'register') {
-        try {
-          const success = await register(formData);
-          if (success) {
-            console.log('Registration successful, closing modal');
-            onClose();
-          }
-        } catch (error: any) {
-          console.error('Registration failed:', error);
-          setErrors({ general: error.message || 'Registration failed. Please try again.' });
-        }
+    if (mode === 'login') {
+      const result = await login(formData.email, formData.password);
+      if (result.success) {
+        onClose();
+      } else {
+        setErrors({ general: result.error || 'Invalid email or password' });
       }
-    } catch (error) {
-      console.error('Auth error:', error);
-      setErrors({ general: 'An error occurred. Please try again.' });
+    } else if (mode === 'register') {
+      const result = await register(formData);
+      if (result.success) {
+        onClose();
+      } else {
+        setErrors({ general: result.error || 'Registration failed. Please try again.' });
+      }
     }
   };
 
