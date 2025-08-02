@@ -10,7 +10,7 @@ import { useAuth } from '../../context/AuthContext';
 
 const HomePage: React.FC = () => {
   const { tools, isLoading: toolsLoading, error: toolsError, refetch } = useTools();
-  const { session, user, logout } = useAuth();
+  const { session, user, isLoading: authLoading } = useAuth();
   const [filteredTools, setFilteredTools] = useState<Tool[]>([]);
   const [filters, setFilters] = useState<FilterOptions>({});
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
@@ -223,10 +223,12 @@ const HomePage: React.FC = () => {
         )}
 
         {/* Tools Grid */}
-        {toolsLoading ? (
+        {(toolsLoading || authLoading) ? (
           <div className="flex flex-col justify-center items-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-            <p className="text-gray-600">Loading tools...</p>
+            <p className="text-gray-600">
+              {authLoading ? 'Initializing...' : 'Loading tools...'}
+            </p>
           </div>
         ) : (
           <div className={`grid gap-6 ${
@@ -246,7 +248,7 @@ const HomePage: React.FC = () => {
         )}
 
         {/* Empty State */}
-        {!toolsLoading && filteredTools.length === 0 && !toolsError && (
+        {!toolsLoading && !authLoading && filteredTools.length === 0 && !toolsError && (
           <div className="text-center py-12">
             <div className="text-gray-400 mb-4">
               <Search size={64} className="mx-auto" />

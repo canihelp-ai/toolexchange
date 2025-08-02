@@ -74,10 +74,11 @@ export const useTools = () => {
   const [tools, setTools] = useState<Tool[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { session } = useAuth();
+  const { session, isLoading: authLoading } = useAuth();
 
   useEffect(() => {
-    let mounted = true;
+    // Load tools regardless of authentication status (tools should be publicly viewable)
+    loadTools();
 
     const loadTools = async () => {
       try {
@@ -117,7 +118,7 @@ export const useTools = () => {
     return () => {
       mounted = false;
     };
-  }, [session]);
+  }, [session, authLoading]);
 
   const refetch = () => {
     setIsLoading(true);
