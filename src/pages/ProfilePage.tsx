@@ -97,7 +97,7 @@ const ProfilePage: React.FC = () => {
       // Create unique filename
       const fileExt = selectedFile.name.split('.').pop();
       const fileName = `${user.id}-${Date.now()}.${fileExt}`;
-      const filePath = `avatars/${fileName}`;
+      const filePath = fileName;
 
       // Upload file to Supabase storage
       const { error: uploadError } = await supabase.storage
