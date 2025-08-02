@@ -58,29 +58,23 @@ const DashboardMessages: React.FC = () => {
     try {
       setIsLoading(true);
       
-      // Load chats from database
+      console.log('Loading chats for user:', user.id);
+      
+      // First, get all chats where user is a participant
       const { data: chatsData, error: chatsError } = await supabase
         .from('chats')
-        .select(`
-          id,
-          participants,
-          created_at,
-          updated_at,
-          messages!inner (
-            id,
-            content,
-            sender_id,
-            created_at,
-            read
-          )
-        `)
+        .select('*')
         .contains('participants', [user.id])
         .order('updated_at', { ascending: false });
 
       if (chatsError) {
         console.error('Error loading chats:', chatsError);
+        // If no chats exist, show empty state
+        setChats([]);
         return;
       }
+
+      console.log('Found chats:', chatsData?.length || 0);
 
       // Transform chats data
       const transformedChats: Chat[] = [];
@@ -99,40 +93,75 @@ const DashboardMessages: React.FC = () => {
 
         if (!otherUserProfile) continue;
 
-        // Get last message
-        const lastMessage = chat.messages?.[chat.messages.length - 1];
-        if (!lastMessage) continue;
+        // Get last message for this chat
+        const { data: lastMessageData } = await supabase
+          .from('messages')
+          .select('*')
+          .eq('chat_id', chat.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
 
-        // Count unread messages
-        const unreadCount = chat.messages?.filter((msg: any) => 
-          msg.sender_id !== user.id && !msg.read
-        ).length || 0;
+        if (!lastMessageData) {
+          // If no messages, create a placeholder
+          transformedChats.push({
+            id: chat.id,
+            participants: chat.participants,
+            lastMessage: {
+              content: 'No messages yet',
+              created_at: chat.created_at,
+              sender_id: ''
+            },
+            otherUser: {
+              id: otherUserProfile.id,
+              name: otherUserProfile.name,
+              avatar_url: otherUserProfile.avatar_url || 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1',
+              online: Math.random() > 0.5
+            },
+            unreadCount: 0
+          });
+          continue;
+        }
+
+        // Count unread messages for this chat
+        const { data: unreadMessages } = await supabase
+          .from('messages')
+          .select('id')
+          .eq('chat_id', chat.id)
+          .eq('read', false)
+          .neq('sender_id', user.id);
+
+        const unreadCount = unreadMessages?.length || 0;
 
         transformedChats.push({
           id: chat.id,
           participants: chat.participants,
           lastMessage: {
-            content: lastMessage.content,
-            created_at: lastMessage.created_at,
-            sender_id: lastMessage.sender_id
+            content: lastMessageData.content,
+            created_at: lastMessageData.created_at,
+            sender_id: lastMessageData.sender_id
           },
           otherUser: {
             id: otherUserProfile.id,
             name: otherUserProfile.name,
             avatar_url: otherUserProfile.avatar_url || 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1',
-            online: Math.random() > 0.5 // Simulate online status
+            online: Math.random() > 0.5
           },
           unreadCount
         });
       }
 
+      console.log('Transformed chats:', transformedChats.length);
       setChats(transformedChats);
+      
       if (transformedChats.length > 0) {
         setSelectedChat(transformedChats[0]);
         loadMessages(transformedChats[0].id);
       }
     } catch (error) {
       console.error('Error loading chats:', error);
+      // Show empty state on error
+      setChats([]);
     } finally {
       setIsLoading(false);
     }
@@ -140,6 +169,8 @@ const DashboardMessages: React.FC = () => {
 
   const loadMessages = async (chatId: string) => {
     try {
+      console.log('Loading messages for chat:', chatId);
+      
       // Load messages from database
       const { data: messagesData, error: messagesError } = await supabase
         .from('messages')
@@ -160,8 +191,11 @@ const DashboardMessages: React.FC = () => {
 
       if (messagesError) {
         console.error('Error loading messages:', messagesError);
+        setMessages([]);
         return;
       }
+
+      console.log('Found messages:', messagesData?.length || 0);
 
       const transformedMessages: Message[] = (messagesData || []).map((msg: any) => ({
         id: msg.id,
@@ -186,8 +220,8 @@ const DashboardMessages: React.FC = () => {
       }
     } catch (error) {
       console.error('Error loading messages:', error);
+      setMessages([]);
     }
-  };
 
   const sendMessage = async () => {
     if (!newMessage.trim() || !selectedChat || !user) return;

@@ -21,69 +21,71 @@ const Header: React.FC = () => {
   const { user, logout } = useAuth();
 
   // Mock notifications data
-  const [notifications] = useState([
-    {
-      id: '1',
-      type: 'booking',
-      title: 'New Booking Request',
-      message: 'Sarah Johnson wants to rent your DeWalt drill',
-      read: false,
-      created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-      action_url: '/dashboard/bookings'
-    },
-    {
-      id: '2',
-      type: 'review',
-      title: 'New Review',
-      message: 'Mike Wilson left a 5-star review for your excavator',
-      read: true,
-      created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-      action_url: '/dashboard/reviews'
-    },
-    {
-      id: '3',
-      type: 'message',
-      title: 'New Message',
-      message: 'John Martinez sent you a message about tile saw rental',
-      read: false,
-      created_at: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(),
-      action_url: '/dashboard/messages'
-    }
-  ]);
+  const [notifications, setNotifications] = useState([]);
+  const [recentMessages, setRecentMessages] = useState([]);
 
-  // Mock recent messages data
-  const [recentMessages] = useState([
-    {
-      id: '1',
-      sender: {
-        name: 'Sarah Johnson',
-        avatar_url: 'https://images.pexels.com/photos/1438761/pexels-photo-1438761.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1'
-      },
-      content: 'Hi! Is the drill still available for this weekend?',
-      created_at: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
-      read: false
-    },
-    {
-      id: '2',
-      sender: {
-        name: 'Mike Wilson',
-        avatar_url: 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1'
-      },
-      content: 'Thanks for the excavator rental. Everything went smoothly!',
-      created_at: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
-      read: true
-    },
-    {
-      id: '3',
-      sender: {
-        name: 'John Martinez',
-        avatar_url: 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1'
-      },
-      content: 'Can you provide more details about the tile saw specifications?',
-      created_at: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(),
-      read: false
+  useEffect(() => {
+    if (user) {
+      loadHeaderData();
     }
-  ]);
+  }, [user]);
+
+  const loadHeaderData = async () => {
+    if (!user) return;
+
+    try {
+      // Load real notifications
+      const { data: notificationsData } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      setNotifications(notificationsData || []);
+
+      // Load recent messages from chats
+      const { data: chatsData } = await supabase
+        .from('chats')
+        .select(`
+          id,
+          participants,
+          messages!inner(
+            content,
+            created_at,
+            sender_id,
+            read,
+            sender:profiles!messages_sender_id_fkey(name, avatar_url)
+          )
+        `)
+        .contains('participants', [user.id])
+        .order('updated_at', { ascending: false })
+        .limit(3);
+
+      // Transform messages for header display
+      const headerMessages = [];
+      for (const chat of chatsData || []) {
+        const lastMessage = chat.messages?.[0];
+        if (lastMessage && lastMessage.sender_id !== user.id) {
+          headerMessages.push({
+            id: lastMessage.id || Math.random().toString(),
+            sender: {
+              name: lastMessage.sender?.name || 'Unknown User',
+              avatar_url: lastMessage.sender?.avatar_url || 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1'
+            },
+            content: lastMessage.content,
+            created_at: lastMessage.created_at,
+            read: lastMessage.read
+          });
+        }
+      }
+
+      setRecentMessages(headerMessages);
+
+    } catch (error) {
+      console.error('Error loading header data:', error);
+    }
+  };
 
   const unreadNotifications = notifications.filter(n => !n.read).length;
   const unreadMessages = recentMessages.filter(m => !m.read).length;
@@ -115,10 +117,21 @@ const Header: React.FC = () => {
         navigate('/settings');
         break;
       case 'logout':
-        logout();
+        handleLogout();
         break;
       default:
         console.log('Unknown action:', action);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Force navigation even if logout fails
+      navigate('/');
     }
   };
 
