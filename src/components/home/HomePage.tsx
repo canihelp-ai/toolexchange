@@ -223,38 +223,16 @@ const HomePage: React.FC = () => {
         )}
 
         {/* Authentication Required State */}
-        {!session && !authLoading && (
-          <div className="text-center py-12">
-            <div className="text-gray-400 mb-4">
-              <Search size={64} className="mx-auto" />
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              Sign in required
-            </h3>
-            <p className="text-gray-500 mb-4">
-              Please sign in to view and rent tools from our marketplace.
-            </p>
-            <Button
-              onClick={() => {
-                // This will trigger the auth modal in the header
-                const signInButton = document.querySelector('[data-auth-trigger]') as HTMLButtonElement;
-                if (signInButton) signInButton.click();
-              }}
-            >
-              Sign In
-            </Button>
-          </div>
-        )}
 
         {/* Tools Grid */}
-        {session && (toolsLoading || authLoading) ? (
+        {(toolsLoading || authLoading) ? (
           <div className="flex flex-col justify-center items-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
             <p className="text-gray-600">
               {authLoading ? 'Initializing...' : 'Loading tools...'}
             </p>
           </div>
-        ) : session ? (
+        ) : (
           <div className={`grid gap-6 ${
             viewMode === 'grid' 
               ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
@@ -269,10 +247,10 @@ const HomePage: React.FC = () => {
               />
             ))}
           </div>
-        ) : null}
+        )}
 
         {/* Empty State */}
-        {session && !toolsLoading && !authLoading && filteredTools.length === 0 && !toolsError && (
+        {!toolsLoading && !authLoading && filteredTools.length === 0 && !toolsError && (
           <div className="text-center py-12">
             <div className="text-gray-400 mb-4">
               <Search size={64} className="mx-auto" />
