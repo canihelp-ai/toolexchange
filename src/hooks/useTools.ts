@@ -102,7 +102,15 @@ export const useTools = () => {
         .order('created_at', { ascending: false });
 
       if (!mounted.current) return;
-      if (error) throw error;
+      if (error) {
+        // Handle auth errors specifically
+        if (error.message?.includes('JWT') || error.message?.includes('refresh_token')) {
+          console.error('Authentication error while loading tools:', error);
+          setError('Session expired. Please refresh the page.');
+          return;
+        }
+        throw error;
+      }
 
       console.log(`Successfully loaded ${data?.length || 0} tools from database`);
       const transformedTools = data ? data.map(transformTool) : [];

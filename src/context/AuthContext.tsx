@@ -50,11 +50,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const initializeAuth = async () => {
       try {
+        // Check if we have a valid session first
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (!mounted) return;
 
-        if (error) throw error;
+        if (error) {
+          console.error('Session error:', error);
+          // If it's a refresh token error, clear the session
+          if (error.message?.includes('refresh_token_not_found') || error.message?.includes('Invalid Refresh Token')) {
+            await supabase.auth.signOut();
+            setState({
+              user: null,
+              session: null,
+              isLoading: false,
+              error: null,
+            });
+            return;
+          }
+          throw error;
+        }
 
         let profile = null;
         if (session?.user) {
@@ -73,12 +88,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           console.log(`Auth state change: ${event}`, session?.user?.id);
           if (!mounted) return;
           
+          // Handle token refresh errors
+          if (event === 'TOKEN_REFRESHED' && !session) {
+            console.log('Token refresh failed, signing out');
+            await supabase.auth.signOut();
+            setState({
+              user: null,
+              session: null,
+              isLoading: false,
+              error: null,
+            });
+            return;
+          }
+          
           let profile = null;
           if (session?.user) {
             try {
               profile = await loadProfile(session.user.id);
             } catch (err) {
               console.error('Failed to load profile:', err);
+              // If profile loading fails due to auth, sign out
+              if (err instanceof Error && err.message.includes('JWT')) {
+                await supabase.auth.signOut();
+                setState({
+                  user: null,
+                  session: null,
+                  isLoading: false,
+                  error: null,
+                });
+                return;
+              }
             }
           }
           
@@ -228,6 +267,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = async () => {
     try {
       console.log('Logging out user');
+      // Clear any stored session data
+      localStorage.removeItem('supabase.auth.token');
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       

@@ -109,9 +109,14 @@ const ProfilePage: React.FC = () => {
       // Delete any existing avatar first
       if (user.avatar_url) {
         const existingPath = user.avatar_url.split('/').slice(-2).join('/'); // Get user_id/filename
-        await supabase.storage
-          .from('avatars')
-          .remove([existingPath]);
+        try {
+          await supabase.storage
+            .from('avatars')
+            .remove([existingPath]);
+        } catch (deleteError) {
+          console.log('Could not delete existing avatar:', deleteError);
+          // Continue with upload even if delete fails
+        }
       }
 
       // Create unique filename
@@ -129,16 +134,26 @@ const ProfilePage: React.FC = () => {
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
+      // Get signed URL for better security
+      const { data: signedUrlData, error: urlError } = await supabase.storage
         .from('avatars')
-        .getPublicUrl(filePath);
+        .createSignedUrl(filePath, 60 * 60 * 24 * 365); // 1 year expiry
+
+      if (urlError) {
+        // Fallback to public URL if signed URL fails
+        const { data: { publicUrl } } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(filePath);
+        var avatarUrl = publicUrl;
+      } else {
+        var avatarUrl = signedUrlData.signedUrl;
+      }
 
       // Update profile with new avatar URL
       const { error: updateError } = await supabase
         .from('profiles')
         .update({
-          avatar_url: publicUrl,
+          avatar_url: avatarUrl,
           updated_at: new Date().toISOString()
         })
         .eq('id', user.id);
@@ -164,7 +179,11 @@ const ProfilePage: React.FC = () => {
 
     } catch (err) {
       console.error('Avatar upload error:', err);
-      setUpdateError('Failed to upload avatar. Please try again.');
+      if (err instanceof Error && err.message.includes('JWT')) {
+        setUpdateError('Session expired. Please refresh the page and try again.');
+      } else {
+        setUpdateError('Failed to upload avatar. Please try again.');
+      }
     } finally {
       setIsUpdating(false);
     }
