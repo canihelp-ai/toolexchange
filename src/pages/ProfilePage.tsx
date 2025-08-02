@@ -106,9 +106,17 @@ const ProfilePage: React.FC = () => {
         return;
       }
 
+      // Delete any existing avatar first
+      if (user.avatar_url) {
+        const existingPath = user.avatar_url.split('/').slice(-2).join('/'); // Get user_id/filename
+        await supabase.storage
+          .from('avatars')
+          .remove([existingPath]);
+      }
+
       // Create unique filename
       const fileExt = selectedFile.name.split('.').pop();
-      const fileName = `${Date.now()}.${fileExt}`;
+      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
       const filePath = `${user.id}/${fileName}`;  // Store in user-specific folder
 
       // Upload file to Supabase storage
@@ -156,7 +164,7 @@ const ProfilePage: React.FC = () => {
 
     } catch (err) {
       console.error('Avatar upload error:', err);
-      setUpdateError(err instanceof Error ? err.message : 'Failed to upload avatar');
+      setUpdateError('Failed to upload avatar. Please try again.');
     } finally {
       setIsUpdating(false);
     }
@@ -222,6 +230,9 @@ const ProfilePage: React.FC = () => {
                 src={user.avatar_url || 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1'}
                 alt={user.name}
                 className="w-24 h-24 rounded-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.src = 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1';
+                }}
               />
               <button 
                 onClick={() => setIsAvatarModalOpen(true)}
@@ -500,6 +511,9 @@ const ProfilePage: React.FC = () => {
                 src={previewUrl || user.avatar_url || 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1'}
                 alt="Preview"
                 className="w-32 h-32 rounded-full object-cover mx-auto"
+                onError={(e) => {
+                  e.currentTarget.src = 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1';
+                }}
               />
               {previewUrl && (
                 <div className="absolute top-0 right-0 bg-green-500 text-white rounded-full p-1">
