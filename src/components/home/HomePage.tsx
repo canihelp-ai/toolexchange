@@ -99,6 +99,16 @@ const HomePage: React.FC = () => {
     setError(null);
     console.log('Loading tools from database...');
     try {
+      // First, let's try a simple query to see if we can access tools at all
+      console.log('Testing basic tools access...');
+      const { data: testData, error: testError } = await supabase
+        .from('tools')
+        .select('id, title, status')
+        .limit(5);
+      
+      console.log('Basic tools test:', { testData, testError });
+      
+      // Now try the full query
       const { data, error } = await supabase
         .from('tools')
         .select(`
@@ -107,22 +117,24 @@ const HomePage: React.FC = () => {
           tool_images(*),
           tool_availability(*)
         `)
-        .eq('status', 'active');
+        .eq('status', 'active')
+        .order('created_at', { ascending: false });
 
       console.log('Raw database response:', { data, error });
 
       if (error) {
         console.error('Error loading tools:', error);
-        setError('Failed to load tools. Please try again.');
+        setError(`Failed to load tools: ${error.message}`);
       } else if (data) {
         console.log('Number of tools found:', data.length);
+        console.log('Sample tool data:', data[0]);
         const transformedTools = data.map(transformTool);
         console.log('Transformed tools:', transformedTools);
         setTools(transformedTools);
       }
     } catch (error) {
       console.error('Error loading tools:', error);
-      setError('Failed to load tools. Please try again.');
+      setError(`Failed to load tools: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsLoading(false);
     }
