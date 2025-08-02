@@ -60,31 +60,33 @@ const DashboardMessages: React.FC = () => {
       
       console.log('Loading chats for user:', user.id);
       
-      // First, get all chats where user is a participant
+      // Get all chats where user is a participant
       const { data: chatsData, error: chatsError } = await supabase
         .from('chats')
-        .select('*')
+        .select(`
+          id,
+          participants,
+          created_at,
+          updated_at
+        `)
         .contains('participants', [user.id])
         .order('updated_at', { ascending: false });
 
       if (chatsError) {
         console.error('Error loading chats:', chatsError);
-        // If no chats exist, show empty state
         setChats([]);
+        setIsLoading(false);
         return;
       }
 
       console.log('Found chats:', chatsData?.length || 0);
 
-      // Transform chats data
       const transformedChats: Chat[] = [];
       
       for (const chat of chatsData || []) {
-        // Get the other participant
         const otherUserId = chat.participants.find((id: string) => id !== user.id);
         if (!otherUserId) continue;
 
-        // Get other user's profile
         const { data: otherUserProfile } = await supabase
           .from('profiles')
           .select('*')
@@ -93,37 +95,21 @@ const DashboardMessages: React.FC = () => {
 
         if (!otherUserProfile) continue;
 
-        // Get last message for this chat
         const { data: lastMessageData } = await supabase
           .from('messages')
-          .select('*')
+          .select(`
+            id,
+            content,
+            sender_id,
+            created_at,
+            read
+          `)
           .eq('chat_id', chat.id)
           .order('created_at', { ascending: false })
           .limit(1)
-          .single();
+          .maybeSingle();
 
-        if (!lastMessageData) {
-          // If no messages, create a placeholder
-          transformedChats.push({
-            id: chat.id,
-            participants: chat.participants,
-            lastMessage: {
-              content: 'No messages yet',
-              created_at: chat.created_at,
-              sender_id: ''
-            },
-            otherUser: {
-              id: otherUserProfile.id,
-              name: otherUserProfile.name,
-              avatar_url: otherUserProfile.avatar_url || 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1',
-              online: Math.random() > 0.5
-            },
-            unreadCount: 0
-          });
-          continue;
-        }
-
-        // Count unread messages for this chat
+        // Count unread messages
         const { data: unreadMessages } = await supabase
           .from('messages')
           .select('id')
@@ -137,9 +123,9 @@ const DashboardMessages: React.FC = () => {
           id: chat.id,
           participants: chat.participants,
           lastMessage: {
-            content: lastMessageData.content,
-            created_at: lastMessageData.created_at,
-            sender_id: lastMessageData.sender_id
+            content: lastMessageData?.content || 'No messages yet',
+            created_at: lastMessageData?.created_at || chat.created_at,
+            sender_id: lastMessageData?.sender_id || ''
           },
           otherUser: {
             id: otherUserProfile.id,
@@ -160,7 +146,6 @@ const DashboardMessages: React.FC = () => {
       }
     } catch (error) {
       console.error('Error loading chats:', error);
-      // Show empty state on error
       setChats([]);
     } finally {
       setIsLoading(false);
@@ -171,7 +156,6 @@ const DashboardMessages: React.FC = () => {
     try {
       console.log('Loading messages for chat:', chatId);
       
-      // Load messages from database
       const { data: messagesData, error: messagesError } = await supabase
         .from('messages')
         .select(`
@@ -180,7 +164,7 @@ const DashboardMessages: React.FC = () => {
           sender_id,
           created_at,
           read,
-          sender:profiles!messages_sender_id_fkey (
+          sender:profiles!messages_sender_id_fkey(
             id,
             name,
             avatar_url
@@ -210,7 +194,6 @@ const DashboardMessages: React.FC = () => {
 
       setMessages(transformedMessages);
 
-      // Mark messages as read
       if (transformedMessages.length > 0) {
         await supabase
           .from('messages')
@@ -229,7 +212,6 @@ const DashboardMessages: React.FC = () => {
 
     setIsSending(true);
     try {
-      // Insert message into database
       const { data: messageData, error: messageError } = await supabase
         .from('messages')
         .insert([{
@@ -244,7 +226,7 @@ const DashboardMessages: React.FC = () => {
           content,
           sender_id,
           created_at,
-          sender:profiles!messages_sender_id_fkey (
+          sender:profiles!messages_sender_id_fkey(
             id,
             name,
             avatar_url
@@ -257,13 +239,11 @@ const DashboardMessages: React.FC = () => {
         return;
       }
 
-      // Update chat's updated_at timestamp
       await supabase
         .from('chats')
         .update({ updated_at: new Date().toISOString() })
         .eq('id', selectedChat.id);
 
-      // Transform and add message to local state
       const newMessageObj: Message = {
         id: messageData.id,
         content: messageData.content,
@@ -278,7 +258,6 @@ const DashboardMessages: React.FC = () => {
       setMessages(prev => [...prev, newMessageObj]);
       setNewMessage('');
 
-      // Create notification for other participant
       const otherUserId = selectedChat.participants.find(id => id !== user.id);
       if (otherUserId) {
         await supabase
@@ -292,7 +271,6 @@ const DashboardMessages: React.FC = () => {
           }]);
       }
 
-      // Refresh chats to update last message
       loadChats();
     } catch (error) {
       console.error('Error sending message:', error);
@@ -305,7 +283,6 @@ const DashboardMessages: React.FC = () => {
     chat.otherUser.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Set up real-time subscription for new messages
   useEffect(() => {
     if (!selectedChat) return;
 
@@ -317,7 +294,6 @@ const DashboardMessages: React.FC = () => {
         table: 'messages',
         filter: `chat_id=eq.${selectedChat.id}`
       }, (payload) => {
-        // Only add message if it's not from current user (to avoid duplicates)
         if (payload.new.sender_id !== user?.id) {
           loadMessages(selectedChat.id);
         }
@@ -345,7 +321,6 @@ const DashboardMessages: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-200px)]">
-        {/* Chat List */}
         <div className="lg:col-span-1">
           <Card padding="none" className="h-full flex flex-col">
             <div className="p-4 border-b border-gray-200">
@@ -416,11 +391,9 @@ const DashboardMessages: React.FC = () => {
           </Card>
         </div>
 
-        {/* Chat Window */}
         <div className="lg:col-span-2">
           {selectedChat ? (
             <Card padding="none" className="h-full flex flex-col">
-              {/* Chat Header */}
               <div className="p-4 border-b border-gray-200 flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <div className="relative">
@@ -453,7 +426,6 @@ const DashboardMessages: React.FC = () => {
                 </div>
               </div>
 
-              {/* Messages */}
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {messages.map((message) => (
                   <div
@@ -488,7 +460,6 @@ const DashboardMessages: React.FC = () => {
                 ))}
               </div>
 
-              {/* Message Input */}
               <div className="p-4 border-t border-gray-200">
                 <div className="flex items-center space-x-2">
                   <Button variant="ghost" size="sm">
