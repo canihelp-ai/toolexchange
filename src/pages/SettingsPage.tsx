@@ -21,7 +21,7 @@ import Modal from '../components/ui/Modal';
 import { useAuth } from '../context/AuthContext';
 
 const SettingsPage: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, error: authError } = useAuth();
   const [activeTab, setActiveTab] = useState('account');
   const [showPassword, setShowPassword] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
