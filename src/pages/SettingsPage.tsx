@@ -27,6 +27,8 @@ const SettingsPage: React.FC = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
     newPassword: '',
