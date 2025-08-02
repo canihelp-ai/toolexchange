@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User as AuthUser } from '@supabase/supabase-js';
-import { supabase, signUp, signIn, signOut, getCurrentUser, createProfile, updateProfile, getProfile } from '../lib/supabase';
+import { supabase, signUp, signIn, signOut, getCurrentUser, createProfile, updateProfile } from '../lib/supabase';
 import { Database } from '../lib/database.types';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
@@ -43,23 +43,47 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<Profile | null>(null);
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [sessionChecked, setSessionChecked] = useState(false);
 
   useEffect(() => {
-    // Get initial session
-    getCurrentUser().then(({ user: authUser }) => {
-      setAuthUser(authUser);
-      if (authUser) {
-        loadUserProfile(authUser.id);
-      } else {
+    // Get initial session and set up auth state listener
+    const initializeAuth = async () => {
+      try {
+        // Get current session
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Error getting session:', error);
+        }
+        
+        const authUser = session?.user ?? null;
+        console.log('Initial auth state:', { authUser: !!authUser, session: !!session });
+        
+        setAuthUser(authUser);
+        if (authUser) {
+          await loadUserProfile(authUser.id);
+        } else {
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error);
         setIsLoading(false);
+      } finally {
+        setSessionChecked(true);
       }
-    });
+    };
+
+    initializeAuth();
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setAuthUser(session?.user ?? null);
-      if (session?.user) {
-        await loadUserProfile(session.user.id);
+      console.log('Auth state changed:', { event, session: !!session, user: !!session?.user });
+      
+      const authUser = session?.user ?? null;
+      setAuthUser(authUser);
+      
+      if (authUser) {
+        await loadUserProfile(authUser.id);
       } else {
         setUser(null);
         setIsLoading(false);
@@ -69,8 +93,46 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Periodically check session validity
+  useEffect(() => {
+    if (!sessionChecked) return;
+
+    const checkSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Session check error:', error);
+          return;
+        }
+
+        // If we think we have a user but session is null, log them out
+        if (authUser && !session) {
+          console.log('Session expired, logging out user');
+          setAuthUser(null);
+          setUser(null);
+        }
+        
+        // If session exists but we don't have authUser, update it
+        if (session?.user && !authUser) {
+          console.log('Found valid session, updating auth user');
+          setAuthUser(session.user);
+          await loadUserProfile(session.user.id);
+        }
+      } catch (error) {
+        console.error('Error checking session:', error);
+      }
+    };
+
+    // Check session every 30 seconds
+    const interval = setInterval(checkSession, 30000);
+    return () => clearInterval(interval);
+  }, [authUser, sessionChecked]);
+
   const loadUserProfile = async (userId: string) => {
     setIsLoading(true);
+    console.log('Loading profile for user:', userId);
+    
     try {
       // First try to get existing profile
       const { data: profile, error } = await supabase
@@ -120,6 +182,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         console.error('Error loading profile:', error);
         throw error;
       } else if (profile) {
+        console.log('Profile loaded successfully:', profile.name);
         setUser(profile);
       }
     } catch (error) {
@@ -133,6 +196,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
     try {
+      console.log('Attempting login for:', email);
       const { data, error } = await signIn(email, password);
       if (error) {
         console.error('Login error:', error);
@@ -140,6 +204,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return false;
       }
       // Profile will be loaded by the auth state change listener
+      console.log('Login successful');
       return true;
     } catch (error) {
       console.error('Login error:', error);
@@ -196,6 +261,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = async () => {
     setIsLoading(true);
     try {
+      console.log('Logging out user');
       await signOut();
       setUser(null);
       setAuthUser(null);
@@ -211,6 +277,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     
     setIsLoading(true);
     try {
+      console.log('Updating profile for user:', authUser.id);
       const { data, error } = await updateProfile(authUser.id, updates);
       if (error) {
         console.error('Profile update error:', error);

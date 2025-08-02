@@ -105,15 +105,23 @@ const HomePage: React.FC = () => {
     setIsLoading(true);
     setError(null);
     console.log('Loading tools from database...');
+    
     try {
-      // First, let's try a simple query to see if we can access tools at all
-      console.log('Testing basic tools access...');
-      const { data: testData, error: testError } = await supabase
-        .from('tools')
-        .select('id, title, status')
-        .limit(5);
+      // Check if we have a valid session before making requests
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
-      console.log('Basic tools test:', { testData, testError });
+      if (sessionError) {
+        console.error('Session error:', sessionError);
+        setError('Authentication error. Please try logging in again.');
+        return;
+      }
+      
+      if (!session) {
+        console.log('No active session found');
+        // Still try to load tools as they should be publicly accessible
+      }
+      
+      console.log('Session status:', { hasSession: !!session, user: !!session?.user });
       
       // Now try the full query
       const { data, error } = await supabase
@@ -128,21 +136,43 @@ const HomePage: React.FC = () => {
         .eq('status', 'active')
         .order('created_at', { ascending: false });
 
-      console.log('Raw database response:', { data, error });
+      console.log('Tools query result:', { 
+        dataCount: data?.length || 0, 
+        error: error?.message || 'none',
+        errorCode: error?.code || 'none'
+      });
 
       if (error) {
         console.error('Error loading tools:', error);
-        setError(`Failed to load tools: ${error.message}`);
+        
+        // Handle specific error cases
+        if (error.code === 'PGRST301') {
+          setError('Database connection issue. Please refresh the page.');
+        } else if (error.message.includes('JWT')) {
+          setError('Session expired. Please log in again.');
+        } else {
+          setError(`Failed to load tools: ${error.message}`);
+        }
       } else if (data) {
-        console.log('Number of tools found:', data.length);
-        console.log('Sample tool data:', data[0]);
+        console.log(`Successfully loaded ${data.length} tools`);
         const transformedTools = data.map(transformTool);
-        console.log('Transformed tools:', transformedTools);
         setTools(transformedTools);
+      } else {
+        console.log('No tools data returned');
+        setTools([]);
       }
     } catch (error) {
       console.error('Error loading tools:', error);
-      setError(`Failed to load tools: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      
+      if (error instanceof Error) {
+        if (error.message.includes('fetch')) {
+          setError('Network error. Please check your connection and try again.');
+        } else {
+          setError(`Failed to load tools: ${error.message}`);
+        }
+      } else {
+        setError('An unexpected error occurred. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
