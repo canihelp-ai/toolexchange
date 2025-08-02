@@ -104,26 +104,9 @@ const HomePage: React.FC = () => {
   const loadTools = async () => {
     setIsLoading(true);
     setError(null);
-    console.log('Loading tools from database...');
     
     try {
-      // Check if we have a valid session before making requests
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError) {
-        console.error('Session error:', sessionError);
-        setError('Authentication error. Please try logging in again.');
-        return;
-      }
-      
-      if (!session) {
-        console.log('No active session found');
-        // Still try to load tools as they should be publicly accessible
-      }
-      
-      console.log('Session status:', { hasSession: !!session, user: !!session?.user });
-      
-      // Now try the full query
+      // Load tools - they should be publicly accessible
       const { data, error } = await supabase
         .from('tools')
         .select(`
@@ -136,7 +119,7 @@ const HomePage: React.FC = () => {
         .eq('status', 'active')
         .order('created_at', { ascending: false });
 
-      console.log('Tools query result:', { 
+      console.log('Tools loaded:', { 
         dataCount: data?.length || 0, 
         error: error?.message || 'none',
         errorCode: error?.code || 'none'
@@ -144,15 +127,7 @@ const HomePage: React.FC = () => {
 
       if (error) {
         console.error('Error loading tools:', error);
-        
-        // Handle specific error cases
-        if (error.code === 'PGRST301') {
-          setError('Database connection issue. Please refresh the page.');
-        } else if (error.message.includes('JWT')) {
-          setError('Session expired. Please log in again.');
-        } else {
-          setError(`Failed to load tools: ${error.message}`);
-        }
+        setError(`Failed to load tools: ${error.message}`);
       } else if (data) {
         console.log(`Successfully loaded ${data.length} tools`);
         const transformedTools = data.map(transformTool);
@@ -164,15 +139,7 @@ const HomePage: React.FC = () => {
     } catch (error) {
       console.error('Error loading tools:', error);
       
-      if (error instanceof Error) {
-        if (error.message.includes('fetch')) {
-          setError('Network error. Please check your connection and try again.');
-        } else {
-          setError(`Failed to load tools: ${error.message}`);
-        }
-      } else {
-        setError('An unexpected error occurred. Please try again.');
-      }
+      setError('Failed to load tools. Please try again.');
     } finally {
       setIsLoading(false);
     }

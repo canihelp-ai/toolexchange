@@ -68,15 +68,18 @@ export const updateProfile = async (id: string, updates: any) => {
 };
 
 export const getProfile = async (id: string) => {
-  // Try to get existing profile first
+  // Try to get existing profile first - use array query
   let { data, error } = await supabase
     .from('profiles')
     .select('*')
-    .eq('id', id)
-    .single();
+    .eq('id', id);
 
-  // If profile doesn't exist (PGRST116 error), create it
-  if (error && error.code === 'PGRST116') {
+  if (error) {
+    return { data: null, error };
+  }
+
+  // If profile doesn't exist, create it
+  if (!data || data.length === 0) {
     // Get user data from auth
     const { data: { user: authUser } } = await supabase.auth.getUser();
     
@@ -91,21 +94,20 @@ export const getProfile = async (id: string) => {
         bio: null,
       };
 
-      const { data: newProfile, error: createError } = await supabase
+      const { data: newProfiles, error: createError } = await supabase
         .from('profiles')
         .insert([newProfileData])
-        .select()
-        .single();
+        .select();
 
       if (createError) {
         return { data: null, error: createError };
       }
       
-      return { data: newProfile, error: null };
+      return { data: newProfiles && newProfiles.length > 0 ? newProfiles[0] : null, error: null };
     }
   }
 
-  return { data, error };
+  return { data: data && data.length > 0 ? data[0] : null, error };
 };
 
 // Tools helpers

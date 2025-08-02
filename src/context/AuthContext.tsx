@@ -130,18 +130,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, [authUser, sessionChecked]);
 
   const loadUserProfile = async (userId: string) => {
-    setIsLoading(true);
     console.log('Loading profile for user:', userId);
     
     try {
-      // First try to get existing profile
-      const { data: profile, error } = await supabase
+      // Try to get existing profile - use array query first to check if exists
+      const { data: profiles, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', userId)
-        .single();
+        .eq('id', userId);
 
-      if (error && error.code === 'PGRST116') {
+      if (error) {
+        console.error('Error checking for profile:', error);
+        setIsLoading(false);
+        return;
+      }
+
+      let profile = profiles && profiles.length > 0 ? profiles[0] : null;
+
+      if (!profile) {
         // Profile doesn't exist, create it
         console.log('Profile not found, creating new profile for user:', userId);
         
@@ -165,29 +171,33 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           trust_score: 0,
         };
 
-        const { data: newProfile, error: createError } = await supabase
+        const { data: createdProfiles, error: createError } = await supabase
           .from('profiles')
           .insert([newProfileData])
-          .select()
-          .single();
+          .select();
 
         if (createError) {
           console.error('Error creating profile:', createError);
-          throw createError;
+          setIsLoading(false);
+          return;
         }
         
-        console.log('New profile created:', newProfile);
-        setUser(newProfile);
-      } else if (error) {
-        console.error('Error loading profile:', error);
-        throw error;
-      } else if (profile) {
+        profile = createdProfiles && createdProfiles.length > 0 ? createdProfiles[0] : null;
+        if (profile) {
+          console.log('New profile created:', profile);
+        }
+      }
+      
+      if (profile) {
         console.log('Profile loaded successfully:', profile.name);
         setUser(profile);
+      } else {
+        console.error('Failed to load or create profile');
+        setUser(null);
       }
     } catch (error) {
       console.error('Error loading profile:', error);
-      // Don't throw here, just log the error and continue
+      setUser(null);
     } finally {
       setIsLoading(false);
     }
