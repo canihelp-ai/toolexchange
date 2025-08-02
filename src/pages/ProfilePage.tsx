@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Camera, Edit, MapPin, Phone, Mail, Calendar, Star, Shield, Award, User, Upload, X } from 'lucide-react';
+import { Camera, Edit, MapPin, Phone, Mail, Calendar, Star, Shield, Award, User, Upload, X, Check, AlertCircle } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
@@ -8,11 +8,16 @@ import Rating from '../components/ui/Rating';
 import Modal from '../components/ui/Modal';
 import { useAuth } from '../context/AuthContext';
 import { formatDate } from '../utils/format';
+import { supabase } from '../lib/supabase';
 
 const ProfilePage: React.FC = () => {
   const { user } = useAuth();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [updateError, setUpdateError] = useState<string | null>(null);
+  const [updateSuccess, setUpdateSuccess] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [editFormData, setEditFormData] = useState({
@@ -24,9 +29,46 @@ const ProfilePage: React.FC = () => {
 
   const handleEditSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement profile update
-    console.log('Update profile:', editFormData);
-    setIsEditModalOpen(false);
+    setIsConfirmModalOpen(true);
+  };
+
+  const handleConfirmUpdate = async () => {
+    if (!user) return;
+
+    setIsUpdating(true);
+    setUpdateError(null);
+    setIsConfirmModalOpen(false);
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          name: editFormData.name,
+          phone: editFormData.phone || null,
+          location: editFormData.location,
+          bio: editFormData.bio || null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      setUpdateSuccess(true);
+      setIsEditModalOpen(false);
+      
+      // Show success message for 3 seconds
+      setTimeout(() => {
+        setUpdateSuccess(false);
+        // Refresh the page to show updated data
+        window.location.reload();
+      }, 3000);
+
+    } catch (err) {
+      console.error('Profile update error:', err);
+      setUpdateError(err instanceof Error ? err.message : 'Failed to update profile');
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -46,17 +88,66 @@ const ProfilePage: React.FC = () => {
   const handleAvatarUpload = async () => {
     if (!selectedFile) return;
     
-    // TODO: Implement actual file upload to Supabase storage
-    console.log('Upload avatar:', selectedFile);
-    
-    // Clean up preview URL
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl);
+    if (!user) return;
+
+    setIsUpdating(true);
+    setUpdateError(null);
+
+    try {
+      // Create unique filename
+      const fileExt = selectedFile.name.split('.').pop();
+      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+
+      // Upload file to Supabase storage
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, selectedFile, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      // Update profile with new avatar URL
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({
+          avatar_url: publicUrl,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id);
+
+      if (updateError) throw updateError;
+
+      setUpdateSuccess(true);
+      
+      // Clean up preview URL
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+      
+      setIsAvatarModalOpen(false);
+      setSelectedFile(null);
+      setPreviewUrl(null);
+      
+      // Show success message for 3 seconds then refresh
+      setTimeout(() => {
+        setUpdateSuccess(false);
+        window.location.reload();
+      }, 3000);
+
+    } catch (err) {
+      console.error('Avatar upload error:', err);
+      setUpdateError(err instanceof Error ? err.message : 'Failed to upload avatar');
+    } finally {
+      setIsUpdating(false);
     }
-    
-    setIsAvatarModalOpen(false);
-    setSelectedFile(null);
-    setPreviewUrl(null);
   };
 
   const handleAvatarModalClose = () => {
@@ -82,6 +173,35 @@ const ProfilePage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Success Message */}
+        {updateSuccess && (
+          <div className="fixed top-4 right-4 bg-green-50 border border-green-200 rounded-lg p-4 shadow-lg z-50">
+            <div className="flex items-center">
+              <Check className="w-5 h-5 text-green-600 mr-2" />
+              <p className="text-green-800 font-medium">Profile updated successfully!</p>
+            </div>
+          </div>
+        )}
+
+        {/* Error Message */}
+        {updateError && (
+          <div className="fixed top-4 right-4 bg-red-50 border border-red-200 rounded-lg p-4 shadow-lg z-50">
+            <div className="flex items-center">
+              <AlertCircle className="w-5 h-5 text-red-600 mr-2" />
+              <div>
+                <p className="text-red-800 font-medium">Update failed</p>
+                <p className="text-red-600 text-sm">{updateError}</p>
+              </div>
+              <button
+                onClick={() => setUpdateError(null)}
+                className="ml-4 text-red-600 hover:text-red-800"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Profile Header */}
         <Card className="mb-8">
           <div className="flex flex-col md:flex-row items-start md:items-center space-y-4 md:space-y-0 md:space-x-6">
@@ -231,6 +351,15 @@ const ProfilePage: React.FC = () => {
         size="md"
       >
         <form onSubmit={handleEditSubmit} className="space-y-4">
+          {updateError && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+              <div className="flex items-center">
+                <AlertCircle className="w-4 h-4 text-red-600 mr-2" />
+                <p className="text-sm text-red-600">{updateError}</p>
+              </div>
+            </div>
+          )}
+
           <Input
             name="name"
             label="Full Name"
@@ -275,19 +404,76 @@ const ProfilePage: React.FC = () => {
               variant="outline"
               onClick={() => setIsEditModalOpen(false)}
               className="flex-1"
+              disabled={isUpdating}
             >
               Cancel
             </Button>
             <Button
               type="submit"
               className="flex-1"
+              isLoading={isUpdating}
             >
-              Save Changes
+              {isUpdating ? 'Saving...' : 'Save Changes'}
             </Button>
           </div>
         </form>
       </Modal>
 
+      {/* Confirmation Modal */}
+      <Modal
+        isOpen={isConfirmModalOpen}
+        onClose={() => setIsConfirmModalOpen(false)}
+        title="Confirm Profile Changes"
+        size="md"
+      >
+        <div className="space-y-4">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h4 className="font-medium text-blue-900 mb-2">Review Your Changes</h4>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-blue-700">Name:</span>
+                <span className="text-blue-900 font-medium">{editFormData.name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-blue-700">Phone:</span>
+                <span className="text-blue-900 font-medium">{editFormData.phone || 'Not provided'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-blue-700">Location:</span>
+                <span className="text-blue-900 font-medium">{editFormData.location}</span>
+              </div>
+              {editFormData.bio && (
+                <div>
+                  <span className="text-blue-700">Bio:</span>
+                  <p className="text-blue-900 font-medium mt-1">{editFormData.bio}</p>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          <p className="text-sm text-gray-600">
+            Are you sure you want to update your profile with these changes?
+          </p>
+          
+          <div className="flex space-x-4">
+            <Button
+              variant="outline"
+              onClick={() => setIsConfirmModalOpen(false)}
+              className="flex-1"
+              disabled={isUpdating}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmUpdate}
+              className="flex-1"
+              isLoading={isUpdating}
+            >
+              {isUpdating ? 'Updating...' : 'Confirm Update'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
       {/* Avatar Upload Modal */}
       <Modal
         isOpen={isAvatarModalOpen}
@@ -371,6 +557,7 @@ const ProfilePage: React.FC = () => {
               variant="outline"
               onClick={handleAvatarModalClose}
               className="flex-1"
+              disabled={isUpdating}
             >
               Cancel
             </Button>
@@ -378,8 +565,9 @@ const ProfilePage: React.FC = () => {
               onClick={handleAvatarUpload}
               className="flex-1"
               disabled={!selectedFile}
+              isLoading={isUpdating}
             >
-              Upload Picture
+              {isUpdating ? 'Uploading...' : 'Upload Picture'}
             </Button>
           </div>
         </div>
