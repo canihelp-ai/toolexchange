@@ -67,11 +67,43 @@ export const updateProfile = async (id: string, updates: any) => {
 };
 
 export const getProfile = async (id: string) => {
-  const { data, error } = await supabase
+  // Try to get existing profile first
+  let { data, error } = await supabase
     .from('profiles')
     .select('*')
     .eq('id', id)
     .single();
+
+  // If profile doesn't exist (PGRST116 error), create it
+  if (error && error.code === 'PGRST116') {
+    // Get user data from auth
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    
+    if (authUser && authUser.id === id) {
+      const newProfileData = {
+        id: id,
+        email: authUser.email || '',
+        name: authUser.user_metadata?.name || `User ${Math.random().toString(36).substring(2, 8)}`,
+        phone: authUser.user_metadata?.phone || null,
+        location: authUser.user_metadata?.location || '',
+        role: authUser.user_metadata?.role || 'renter',
+        bio: null,
+      };
+
+      const { data: newProfile, error: createError } = await supabase
+        .from('profiles')
+        .insert([newProfileData])
+        .select()
+        .single();
+
+      if (createError) {
+        return { data: null, error: createError };
+      }
+      
+      return { data: newProfile, error: null };
+    }
+  }
+
   return { data, error };
 };
 

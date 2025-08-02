@@ -72,14 +72,59 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const loadUserProfile = async (userId: string) => {
     setIsLoading(true);
     try {
-      const { data: profile, error } = await getProfile(userId);
-      if (error) {
+      // First try to get existing profile
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error && error.code === 'PGRST116') {
+        // Profile doesn't exist, create it
+        console.log('Profile not found, creating new profile for user:', userId);
+        
+        // Get user data from auth to populate profile
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        
+        const newProfileData = {
+          id: userId,
+          email: authUser?.email || '',
+          name: authUser?.user_metadata?.name || `User ${Math.random().toString(36).substring(2, 8)}`,
+          phone: authUser?.user_metadata?.phone || null,
+          location: authUser?.user_metadata?.location || '',
+          role: authUser?.user_metadata?.role || 'renter',
+          bio: null,
+          avatar_url: null,
+          email_verified: authUser?.email_confirmed_at ? true : false,
+          phone_verified: false,
+          id_verified: false,
+          rating: 0,
+          review_count: 0,
+          trust_score: 0,
+        };
+
+        const { data: newProfile, error: createError } = await supabase
+          .from('profiles')
+          .insert([newProfileData])
+          .select()
+          .single();
+
+        if (createError) {
+          console.error('Error creating profile:', createError);
+          throw createError;
+        }
+        
+        console.log('New profile created:', newProfile);
+        setUser(newProfile);
+      } else if (error) {
         console.error('Error loading profile:', error);
+        throw error;
       } else if (profile) {
         setUser(profile);
       }
     } catch (error) {
       console.error('Error loading profile:', error);
+      // Don't throw here, just log the error and continue
     } finally {
       setIsLoading(false);
     }
