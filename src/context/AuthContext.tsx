@@ -37,13 +37,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     let mounted = true;
-    let initialized = false;
 
 
     const getInitialSession = async () => {
-      if (initialized) return;
-      initialized = true;
-      
       try {
         console.log('Getting initial session...');
         
@@ -52,9 +48,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (!mounted) return;
         
         if (session) {
+          console.log('Found existing session for user:', session.user.id);
           setSession(session);
           await loadProfile(session.user.id);
         } else {
+          console.log('No existing session found');
           setSession(null);
           setUser(null);
         }
@@ -74,6 +72,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.log('Auth state change:', event, session?.user?.id);
 
         try {
+          setIsLoading(true);
           if (session) {
             setSession(session);
             await loadProfile(session.user.id);
@@ -85,6 +84,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         } catch (err) {
           console.error('Auth state change error:', err);
           setError(err instanceof Error ? err.message : 'Auth state change failed');
+        } finally {
+          if (mounted) setIsLoading(false);
         }
       }
     );

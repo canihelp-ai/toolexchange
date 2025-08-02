@@ -11,24 +11,24 @@ import ResetPasswordPage from './pages/ResetPasswordPage';
 
 const AppContent: React.FC = () => {
   const { user, isLoading } = useAuth();
-  const [showLanding, setShowLanding] = React.useState(false);
+  const [showLanding, setShowLanding] = React.useState(true);
   
   // Check if we're on the reset password page
   const isResetPasswordPage = window.location.pathname === '/reset-password';
 
   React.useEffect(() => {
-    if (!isLoading) {
+    if (!isLoading && !isResetPasswordPage) {
       // Don't show landing modal on reset password page
-      setShowLanding(!user && !isResetPasswordPage);
+      setShowLanding(!user);
     }
-  }, [user, isLoading, isResetPasswordPage]);
+  }, [user, isLoading]);
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Initializing...</p>
+          <p className="text-gray-600">Loading ToolShare...</p>
         </div>
       </div>
     );
@@ -39,12 +39,7 @@ const AppContent: React.FC = () => {
     return <ResetPasswordPage />;
   }
 
-  // Show landing modal if user is not authenticated and not on reset password page
-  if (!user && showLanding) {
-    return <LandingModal onAuthSuccess={() => setShowLanding(false)} />;
-  }
-
-  // If user is not authenticated and not showing landing, redirect to home
+  // Show landing modal if user is not authenticated
   if (!user) {
     return <LandingModal onAuthSuccess={() => setShowLanding(false)} />;
   }
