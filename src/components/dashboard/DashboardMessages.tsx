@@ -222,6 +222,7 @@ const DashboardMessages: React.FC = () => {
       console.error('Error loading messages:', error);
       setMessages([]);
     }
+  };
 
   const sendMessage = async () => {
     if (!newMessage.trim() || !selectedChat || !user) return;
