@@ -1085,9 +1085,12 @@ const ToolDetailPage: React.FC = () => {
         <div className="space-y-4">
           <div className="flex items-center space-x-3 pb-3 border-b">
             <img
-              src={tool?.owner.avatar}
+              src={tool?.owner.avatar || 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1'}
               alt={tool?.owner.name}
               className="w-10 h-10 rounded-full object-cover"
+              onError={(e) => {
+                e.currentTarget.src = 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1';
+              }}
             />
             <div>
               <h3 className="font-medium text-gray-900">{tool?.owner.name}</h3>
