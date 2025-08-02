@@ -107,9 +107,6 @@ const HomePage: React.FC = () => {
     setError(null);
     
     try {
-      // Test basic database connectivity
-      console.log('Testing database connection...');
-      
       const { data, error } = await supabase
         .from('tools')
         .select(`
@@ -124,7 +121,7 @@ const HomePage: React.FC = () => {
 
       if (error) {
         console.error('Error loading tools:', error);
-        setError(`Database error: ${error.message}. Please check your connection.`);
+        setError(`Failed to load tools: ${error.message}`);
       } else if (data) {
         console.log(`Successfully loaded ${data.length} tools from database`);
         const transformedTools = data.map(transformTool);
@@ -135,13 +132,14 @@ const HomePage: React.FC = () => {
       }
     } catch (error) {
       console.error('Error loading tools:', error);
-      setError(`Network error: ${error instanceof Error ? error.message : 'Unknown error'}. Please check your internet connection.`);
+      setError(`Failed to load tools: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsLoading(false);
     }
   };
 
   const applyFiltersAndSearch = () => {
+    console.log('Applying filters to tools:', tools.length);
     let filtered = [...tools];
 
     // Apply search
@@ -204,6 +202,7 @@ const HomePage: React.FC = () => {
     });
 
     setFilteredTools(filtered);
+    console.log('Filtered tools:', filtered.length);
   };
 
   const handleSearch = (e: React.FormEvent) => {

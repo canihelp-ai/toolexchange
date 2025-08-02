@@ -84,18 +84,18 @@ const AuthModal: React.FC<AuthModalProps> = ({
     if (!validateForm()) return;
 
     if (mode === 'login') {
-      const result = await login(formData.email, formData.password);
-      if (result.success) {
+      try {
+        await login(formData.email, formData.password);
         onClose();
-      } else {
-        setErrors({ general: result.error || 'Invalid email or password' });
+      } catch (err) {
+        setErrors({ general: err instanceof Error ? err.message : 'Invalid email or password' });
       }
     } else if (mode === 'register') {
-      const result = await register(formData);
-      if (result.success) {
+      try {
+        await register(formData);
         onClose();
-      } else {
-        setErrors({ general: result.error || 'Registration failed. Please try again.' });
+      } catch (err) {
+        setErrors({ general: err instanceof Error ? err.message : 'Registration failed. Please try again.' });
       }
     }
   };

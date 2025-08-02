@@ -13,35 +13,27 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: true,
-    flowType: 'pkce',
+    detectSessionInUrl: false,
+    storage: typeof window !== 'undefined' ? localStorage : undefined,
     debug: import.meta.env.DEV
   }
 });
 
-// Auth helpers
-export const signUp = async (email: string, password: string, userData: any) => {
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: userData
-    }
-  });
-  return { data, error };
+// Auth functions
+export const signIn = async (email: string, password: string) => {
+  return await supabase.auth.signInWithPassword({ email, password });
 };
 
-export const signIn = async (email: string, password: string) => {
-  const { data, error } = await supabase.auth.signInWithPassword({
+export const signUp = async (email: string, password: string, metadata?: any) => {
+  return await supabase.auth.signUp({
     email,
-    password
+    password,
+    options: { data: metadata }
   });
-  return { data, error };
 };
 
 export const signOut = async () => {
-  const { error } = await supabase.auth.signOut();
-  return { error };
+  return await supabase.auth.signOut();
 };
 
 export const getCurrentUser = async () => {
@@ -70,46 +62,12 @@ export const updateProfile = async (id: string, updates: any) => {
 };
 
 export const getProfile = async (id: string) => {
-  // Try to get existing profile first - use array query
-  let { data, error } = await supabase
+  const { data, error } = await supabase
     .from('profiles')
     .select('*')
-    .eq('id', id);
-
-  if (error) {
-    return { data: null, error };
-  }
-
-  // If profile doesn't exist, create it
-  if (!data || data.length === 0) {
-    // Get user data from auth
-    const { data: { user: authUser } } = await supabase.auth.getUser();
-    
-    if (authUser && authUser.id === id) {
-      const newProfileData = {
-        id: id,
-        email: authUser.email || '',
-        name: authUser.user_metadata?.name || `User ${Math.random().toString(36).substring(2, 8)}`,
-        phone: authUser.user_metadata?.phone || null,
-        location: authUser.user_metadata?.location || '',
-        role: authUser.user_metadata?.role || 'renter',
-        bio: null,
-      };
-
-      const { data: newProfiles, error: createError } = await supabase
-        .from('profiles')
-        .insert([newProfileData])
-        .select();
-
-      if (createError) {
-        return { data: null, error: createError };
-      }
-      
-      return { data: newProfiles && newProfiles.length > 0 ? newProfiles[0] : null, error: null };
-    }
-  }
-
-  return { data: data && data.length > 0 ? data[0] : null, error };
+    .eq('id', id)
+    .single();
+  return { data, error };
 };
 
 // Tools helpers
