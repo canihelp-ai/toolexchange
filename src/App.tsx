@@ -45,18 +45,8 @@ const AppContent: React.FC = () => {
         <Route path="/" element={<HomePage />} />
         <Route path="/tool/:id" element={<ToolDetailPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
-        <Route path="/profile" element={
-          <div>
-            <Header />
-            <ProfilePage />
-          </div>
-        } />
-        <Route path="/settings" element={
-          <div>
-            <Header />
-            <SettingsPage />
-          </div>
-        } />
+        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/settings" element={<SettingsPage />} />
         <Route path="/dashboard" element={
           <DashboardLayout>
             <DashboardHome />
