@@ -378,6 +378,12 @@ const SettingsPage: React.FC = () => {
         size="md"
       >
         <form onSubmit={handlePasswordChange} className="space-y-4">
+          {authError && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+              <p className="text-sm text-red-600">{authError}</p>
+            </div>
+          )}
+
           <Input
             type={showPassword ? 'text' : 'password'}
             label="Current Password"
@@ -392,6 +398,7 @@ const SettingsPage: React.FC = () => {
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
             }
+            error={errors.currentPassword}
             required
           />
           
@@ -400,6 +407,7 @@ const SettingsPage: React.FC = () => {
             label="New Password"
             value={passwordData.newPassword}
             onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
+            error={errors.newPassword}
             required
           />
           
@@ -408,6 +416,7 @@ const SettingsPage: React.FC = () => {
             label="Confirm New Password"
             value={passwordData.confirmPassword}
             onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+            error={errors.confirmPassword}
             required
           />
           
@@ -417,11 +426,12 @@ const SettingsPage: React.FC = () => {
               variant="outline"
               onClick={() => setIsPasswordModalOpen(false)}
               className="flex-1"
+              disabled={isLoading}
             >
               Cancel
             </Button>
             <Button type="submit" className="flex-1">
-              Change Password
+              {isLoading ? 'Updating...' : 'Change Password'}
             </Button>
           </div>
         </form>
