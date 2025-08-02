@@ -4,14 +4,75 @@ import Button from '../ui/Button';
 import Input from '../ui/Input';
 import ToolCard from './ToolCard';
 import FilterModal from './FilterModal';
-import { FilterOptions } from '../../types';
-import { getTools } from '../../lib/supabase';
-import { Database } from '../../lib/database.types';
+import { FilterOptions, Tool } from '../../types';
+import { supabase } from '../../lib/supabase';
 
-type Tool = Database['public']['Tables']['tools']['Row'] & {
-  owner: Database['public']['Tables']['profiles']['Row'];
-  tool_images: Database['public']['Tables']['tool_images']['Row'][];
-};
+// Transform database tool to our Tool type
+const transformTool = (dbTool: any): Tool => ({
+  id: dbTool.id,
+  ownerId: dbTool.owner_id,
+  owner: {
+    id: dbTool.owner.id,
+    email: dbTool.owner.email,
+    name: dbTool.owner.name,
+    phone: dbTool.owner.phone,
+    avatar: dbTool.owner.avatar_url,
+    location: dbTool.owner.location,
+    bio: dbTool.owner.bio,
+    role: dbTool.owner.role,
+    verified: {
+      email: dbTool.owner.email_verified,
+      phone: dbTool.owner.phone_verified,
+      id: dbTool.owner.id_verified,
+    },
+    rating: dbTool.owner.rating,
+    reviewCount: dbTool.owner.review_count,
+    memberSince: dbTool.owner.member_since,
+    trustScore: dbTool.owner.trust_score,
+  },
+  title: dbTool.title,
+  description: dbTool.description,
+  category: dbTool.category,
+  brand: dbTool.brand,
+  model: dbTool.model,
+  images: dbTool.tool_images?.map((img: any) => img.image_url) || [],
+  location: dbTool.location,
+  condition: dbTool.condition,
+  specifications: dbTool.specifications || {},
+  pricing: {
+    type: dbTool.pricing_type,
+    hourly: dbTool.hourly_rate,
+    daily: dbTool.daily_rate,
+    weekly: dbTool.weekly_rate,
+    currentBid: dbTool.current_bid,
+    suggestedBid: dbTool.suggested_bid,
+  },
+  availability: {
+    startDate: dbTool.tool_availability?.[0]?.start_date || '',
+    endDate: dbTool.tool_availability?.[0]?.end_date || '',
+    blockedDates: dbTool.tool_availability?.[0]?.blocked_dates || [],
+  },
+  operatorSupport: {
+    available: dbTool.operator_available,
+    required: dbTool.operator_required,
+    rate: dbTool.operator_rate,
+  },
+  insurance: {
+    available: dbTool.insurance_available,
+    basicCoverage: dbTool.basic_coverage,
+    premiumCoverage: dbTool.premium_coverage,
+  },
+  rating: dbTool.rating,
+  reviewCount: dbTool.review_count,
+  features: dbTool.features || [],
+  rules: dbTool.rules || [],
+  deposit: dbTool.deposit,
+  createdAt: dbTool.created_at,
+  updatedAt: dbTool.updated_at,
+  status: dbTool.status,
+  views: dbTool.views,
+  favorites: dbTool.favorites,
+});
 
 const HomePage: React.FC = () => {
   const [tools, setTools] = useState<Tool[]>([]);
@@ -23,6 +84,7 @@ const HomePage: React.FC = () => {
   const [sortBy, setSortBy] = useState('relevance');
   const [favorites, setFavorites] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadTools();
@@ -34,15 +96,28 @@ const HomePage: React.FC = () => {
 
   const loadTools = async () => {
     setIsLoading(true);
+    setError(null);
     try {
-      const { data, error } = await getTools();
+      const { data, error } = await supabase
+        .from('tools')
+        .select(`
+          *,
+          owner:profiles!tools_owner_id_fkey(*),
+          tool_images(*),
+          tool_availability(*)
+        `)
+        .eq('status', 'active');
+
       if (error) {
         console.error('Error loading tools:', error);
+        setError('Failed to load tools. Please try again.');
       } else if (data) {
-        setTools(data as Tool[]);
+        const transformedTools = data.map(transformTool);
+        setTools(transformedTools);
       }
     } catch (error) {
       console.error('Error loading tools:', error);
+      setError('Failed to load tools. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -98,9 +173,9 @@ const HomePage: React.FC = () => {
     filtered.sort((a, b) => {
       switch (sortBy) {
         case 'price_low':
-          return a.daily_rate - b.daily_rate;
+          return a.pricing.daily - b.pricing.daily;
         case 'price_high':
-          return b.daily_rate - a.daily_rate;
+          return b.pricing.daily - a.pricing.daily;
         case 'rating':
           return b.rating - a.rating;
         case 'newest':
@@ -225,6 +300,21 @@ const HomePage: React.FC = () => {
             </select>
           </div>
         </div>
+
+        {/* Error State */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <p className="text-red-600">{error}</p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={loadTools}
+              className="mt-2"
+            >
+              Try Again
+            </Button>
+          </div>
+        )}
 
         {/* Tools Grid */}
         {isLoading ? (

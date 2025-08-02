@@ -5,12 +5,7 @@ import Badge from '../ui/Badge';
 import Button from '../ui/Button';
 import Rating from '../ui/Rating';
 import { formatCurrency } from '../../utils/format';
-import { Database } from '../../lib/database.types';
-
-type Tool = Database['public']['Tables']['tools']['Row'] & {
-  owner: Database['public']['Tables']['profiles']['Row'];
-  tool_images: Database['public']['Tables']['tool_images']['Row'][];
-};
+import { Tool } from '../../types';
 
 interface ToolCardProps {
   tool: Tool;
@@ -39,7 +34,7 @@ const ToolCard: React.FC<ToolCardProps> = ({
     >
       <div className="relative">
         <img
-          src={tool.tool_images.find(img => img.is_primary)?.image_url || tool.tool_images[0]?.image_url || 'https://images.pexels.com/photos/209274/pexels-photo-209274.jpeg?auto=compress&cs=tinysrgb&w=800&h=600&dpr=1'}
+          src={tool.images[0] || 'https://images.pexels.com/photos/209274/pexels-photo-209274.jpeg?auto=compress&cs=tinysrgb&w=800&h=600&dpr=1'}
           alt={tool.title}
           className="w-full h-48 object-cover rounded-t-lg"
         />
@@ -55,19 +50,19 @@ const ToolCard: React.FC<ToolCardProps> = ({
         
         {/* Status badges */}
         <div className="absolute top-3 left-3 flex flex-col space-y-1">
-          {tool.insurance_available && (
+          {tool.insurance.available && (
             <Badge variant="success" size="sm">
               <Shield size={12} className="mr-1" />
               Insured
             </Badge>
           )}
-          {tool.operator_available && (
+          {tool.operatorSupport.available && (
             <Badge variant="info" size="sm">
               <Wrench size={12} className="mr-1" />
               Operator
             </Badge>
           )}
-          {tool.pricing_type === 'bidding' && (
+          {tool.pricing.type === 'bidding' && (
             <Badge variant="warning" size="sm">
               <TrendingUp size={12} className="mr-1" />
               Bidding
@@ -82,17 +77,17 @@ const ToolCard: React.FC<ToolCardProps> = ({
             {tool.title}
           </h3>
           <div className="text-right">
-            {tool.pricing_type === 'fixed' ? (
+            {tool.pricing.type === 'fixed' ? (
               <div>
                 <p className="text-lg font-bold text-green-600">
-                  {formatCurrency(tool.daily_rate)}
+                  {formatCurrency(tool.pricing.daily)}
                 </p>
                 <p className="text-sm text-gray-500">per day</p>
               </div>
             ) : (
               <div>
                 <p className="text-lg font-bold text-orange-600">
-                  {formatCurrency(tool.current_bid || 0)}
+                  {formatCurrency(tool.pricing.currentBid || 0)}
                 </p>
                 <p className="text-sm text-gray-500">current bid</p>
               </div>
@@ -108,14 +103,14 @@ const ToolCard: React.FC<ToolCardProps> = ({
         <div className="flex items-center justify-between mb-3">
           <Rating rating={tool.rating} size="sm" />
           <span className="text-sm text-gray-500">
-            ({tool.review_count} reviews)
+            ({tool.reviewCount} reviews)
           </span>
         </div>
 
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <img
-              src={tool.owner.avatar_url || 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=32&h=32&dpr=1'}
+              src={tool.owner.avatar || 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=32&h=32&dpr=1'}
               alt={tool.owner.name}
               className="w-6 h-6 rounded-full object-cover"
             />
@@ -138,7 +133,7 @@ const ToolCard: React.FC<ToolCardProps> = ({
               onView(tool);
             }}
           >
-            {tool.pricing_type === 'fixed' ? 'View Details' : 'Place Bid'}
+            {tool.pricing.type === 'fixed' ? 'View Details' : 'Place Bid'}
           </Button>
         </div>
       </div>
