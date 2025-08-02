@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
+import { useEffect } from 'react';
 
 interface CurrencyContextType {
   currency: 'USD' | 'JMD';

@@ -7,16 +7,17 @@ import Modal from '../ui/Modal';
 import Badge from '../ui/Badge';
 import AuthModal from '../auth/AuthModal';
 import { useAuth } from '../../context/AuthContext';
+import { useCurrency } from '../../context/CurrencyContext';
 import { formatRelativeTime } from '../../utils/format';
 
 const Header: React.FC = () => {
   const navigate = useNavigate();
+  const { currency, setCurrency } = useCurrency();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isMessagesOpen, setIsMessagesOpen] = useState(false);
   const [headerSearchQuery, setHeaderSearchQuery] = useState('');
-  const [currency, setCurrency] = useState<'USD' | 'JMD'>('USD');
   const { user, logout } = useAuth();
 
   // Mock notifications data
