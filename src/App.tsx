@@ -11,17 +11,9 @@ import ResetPasswordPage from './pages/ResetPasswordPage';
 
 const AppContent: React.FC = () => {
   const { user, isLoading } = useAuth();
-  const [showLanding, setShowLanding] = React.useState(true);
   
   // Check if we're on the reset password page
   const isResetPasswordPage = window.location.pathname === '/reset-password';
-
-  React.useEffect(() => {
-    if (!isLoading && !isResetPasswordPage) {
-      // Don't show landing modal on reset password page
-      setShowLanding(!user);
-    }
-  }, [user, isLoading]);
 
   if (isLoading) {
     return (
@@ -41,7 +33,7 @@ const AppContent: React.FC = () => {
 
   // Show landing modal if user is not authenticated
   if (!user) {
-    return <LandingModal onAuthSuccess={() => setShowLanding(false)} />;
+    return <LandingModal onAuthSuccess={() => {}} />;
   }
 
   return (

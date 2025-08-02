@@ -26,12 +26,11 @@ const Header: React.FC = () => {
     if (action === 'logout') {
       logout();
     } else if (action === 'dashboard') {
-      window.location.href = '/dashboard';
+      // Use React Router navigation instead of window.location
+      console.log('Navigate to dashboard');
     } else if (action === 'profile') {
-      // Navigate to profile page when implemented
       console.log('Navigate to profile');
     } else if (action === 'settings') {
-      // Navigate to settings page when implemented
       console.log('Navigate to settings');
     }
   };
