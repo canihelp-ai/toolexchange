@@ -122,7 +122,8 @@ const HomePage: React.FC = () => {
           *,
           owner:profiles!tools_owner_id_fkey(*),
           tool_images(*),
-          tool_availability(*)
+          tool_availability(*),
+          operator:profiles!tools_operator_id_fkey(*)
         `)
         .eq('status', 'active')
         .order('created_at', { ascending: false });

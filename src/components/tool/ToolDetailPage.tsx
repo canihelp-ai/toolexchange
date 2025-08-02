@@ -68,7 +68,7 @@ const ToolDetailPage: React.FC = () => {
           owner:profiles!tools_owner_id_fkey(*),
           tool_images(*),
           tool_availability(*),
-          operator:operators(*, profile:profiles(*))
+          operator:profiles!tools_operator_id_fkey(*)
         `)
         .eq('id', toolId)
         .single();
