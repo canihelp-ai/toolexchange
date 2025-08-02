@@ -29,7 +29,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
     role: 'renter' as 'renter' | 'owner' | 'operator' | 'admin',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const { login, register, isLoading } = useAuth();
+  const { login, register, isLoading, error: authError } = useAuth();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -205,9 +205,9 @@ const AuthModal: React.FC<AuthModalProps> = ({
         </p>
       </div>
 
-      {(errors.general || error) && (
+      {(errors.general || authError) && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-          <p className="text-sm text-red-600">{errors.general || error}</p>
+          <p className="text-sm text-red-600">{errors.general || authError}</p>
         </div>
       )}
 
