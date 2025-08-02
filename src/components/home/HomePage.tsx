@@ -9,8 +9,8 @@ import { useTools } from '../../hooks/useTools';
 import { useAuth } from '../../context/AuthContext';
 
 const HomePage: React.FC = () => {
-  const { tools, isLoading: toolsLoading, error: toolsError } = useTools();
-  const { session } = useAuth();
+  const { tools, isLoading: toolsLoading, error: toolsError, refetch } = useTools();
+  const { session, user, logout } = useAuth();
   const [filteredTools, setFilteredTools] = useState<Tool[]>([]);
   const [filters, setFilters] = useState<FilterOptions>({});
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
@@ -34,7 +34,6 @@ const HomePage: React.FC = () => {
   }, [tools, filters, searchQuery, sortBy]);
 
   const applyFiltersAndSearch = () => {
-    console.log('Applying filters to tools:', tools.length);
     let filtered = [...tools];
 
     // Apply search
@@ -97,7 +96,6 @@ const HomePage: React.FC = () => {
     });
 
     setFilteredTools(filtered);
-    console.log('Filtered tools:', filtered.length);
   };
 
   const handleSearch = (e: React.FormEvent) => {
@@ -216,7 +214,7 @@ const HomePage: React.FC = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => window.location.reload()}
+              onClick={refetch}
               className="mt-2"
             >
               Try Again
@@ -226,8 +224,9 @@ const HomePage: React.FC = () => {
 
         {/* Tools Grid */}
         {toolsLoading ? (
-          <div className="flex justify-center items-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <div className="flex flex-col justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+            <p className="text-gray-600">Loading tools...</p>
           </div>
         ) : (
           <div className={`grid gap-6 ${
@@ -256,7 +255,7 @@ const HomePage: React.FC = () => {
               No tools found
             </h3>
             <p className="text-gray-500 mb-4">
-              {!session ? 'Please sign in to view available tools.' : 'Try adjusting your search or filters to find more tools.'}
+              Try adjusting your search or filters to find more tools.
             </p>
             <Button
               variant="outline"

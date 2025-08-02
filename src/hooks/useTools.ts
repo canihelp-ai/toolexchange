@@ -96,25 +96,18 @@ export const useTools = () => {
           .eq('status', 'active')
           .order('created_at', { ascending: false });
 
-        if (error) {
-          console.error('Error loading tools:', error);
-          throw error;
-        }
+        if (!mounted) return;
+        if (error) throw error;
 
-        if (mounted) {
-          console.log(`Successfully loaded ${data?.length || 0} tools from database`);
-          const transformedTools = data ? data.map(transformTool) : [];
-          setTools(transformedTools);
-        }
-      } catch (error) {
-        console.error('Tools loading error:', error);
-        if (mounted) {
-          setError(error instanceof Error ? error.message : 'Failed to load tools');
-        }
+        console.log(`Successfully loaded ${data?.length || 0} tools from database`);
+        const transformedTools = data ? data.map(transformTool) : [];
+        setTools(transformedTools);
+      } catch (err) {
+        if (!mounted) return;
+        console.error('Tools loading error:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load tools');
       } finally {
-        if (mounted) {
-          setIsLoading(false);
-        }
+        if (mounted) setIsLoading(false);
       }
     };
 
@@ -124,12 +117,12 @@ export const useTools = () => {
     return () => {
       mounted = false;
     };
-  }, [session]); // Re-load when session changes
+  }, [session]);
 
   const refetch = () => {
     setIsLoading(true);
     setError(null);
-    // Trigger re-load by updating a dependency or calling loadTools directly
+    // This will trigger the useEffect to reload
   };
 
   return { tools, isLoading, error, refetch };

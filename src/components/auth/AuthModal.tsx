@@ -89,7 +89,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
         onClose();
         resetForm();
       } catch (err) {
-        setErrors({ general: err instanceof Error ? err.message : 'Invalid email or password' });
+        // Error is already set in auth context
       }
     } else if (mode === 'register') {
       try {
@@ -97,7 +97,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
         onClose();
         resetForm();
       } catch (err) {
-        setErrors({ general: err instanceof Error ? err.message : 'Registration failed. Please try again.' });
+        // Error is already set in auth context
       }
     }
   };
@@ -205,9 +205,9 @@ const AuthModal: React.FC<AuthModalProps> = ({
         </p>
       </div>
 
-      {errors.general && (
+      {(errors.general || error) && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-          <p className="text-sm text-red-600">{errors.general}</p>
+          <p className="text-sm text-red-600">{errors.general || error}</p>
         </div>
       )}
 
