@@ -148,11 +148,13 @@ const Header: React.FC = () => {
                 <Button
                   variant="ghost"
                   onClick={() => setIsAuthModalOpen(true)}
+                  data-auth-trigger
                 >
                   Sign in
                 </Button>
                 <Button
                   onClick={() => setIsAuthModalOpen(true)}
+                  data-auth-trigger
                 >
                   Sign up
                 </Button>

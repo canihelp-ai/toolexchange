@@ -112,8 +112,15 @@ export const useTools = () => {
   useEffect(() => {
     // Load tools regardless of authentication status (tools should be publicly viewable)
     mounted.current = true;
-
-    // Load tools regardless of session status (tools should be publicly viewable)
+    // Only load tools if user is authenticated
+    if (session && !authLoading) {
+      console.log('User authenticated, loading tools...');
+      loadTools();
+    } else if (!authLoading) {
+      console.log('User not authenticated, not loading tools');
+      setIsLoading(false);
+      setTools([]);
+    }
     loadTools();
 
     return () => {

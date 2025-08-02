@@ -37,30 +37,41 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     let mounted = true;
     let initialized = false;
 
+    // Clear any existing session on page load
+    const clearSession = async () => {
+      try {
+        await supabase.auth.signOut();
+        console.log('Cleared existing session on page load');
+      } catch (error) {
+        console.log('No session to clear or error clearing session:', error);
+      }
+    };
+
     const getInitialSession = async () => {
       if (initialized) return;
       initialized = true;
       
       try {
         console.log('Getting initial session...');
+        
+        // Always clear session first
+        await clearSession();
+        
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (!mounted) return;
         if (error) throw error;
 
-        if (!session) {
-          console.log('No initial session found');
-          setIsLoading(false);
-          return;
-        }
-
-        console.log('Initial session found:', session.user.id);
-        setSession(session);
-        await loadProfile(session.user.id);
+        // After clearing, there should be no session
+        console.log('Session cleared, user must log in');
+        setSession(null);
+        setUser(null);
+        setIsLoading(false);
       } catch (err) {
         if (!mounted) return;
         console.error('Initial session error:', err);
         setError(err instanceof Error ? err.message : 'Failed to get session');
+        setIsLoading(false);
       } finally {
         if (mounted) setIsLoading(false);
       }
