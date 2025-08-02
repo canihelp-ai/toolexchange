@@ -20,7 +20,9 @@ const AuthModal: React.FC<AuthModalProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
+    confirmEmail: '',
     password: '',
+    confirmPassword: '',
     name: '',
     phone: '',
     location: '',
@@ -46,10 +48,22 @@ const AuthModal: React.FC<AuthModalProps> = ({
       newErrors.email = 'Please enter a valid email';
     }
 
+    if (mode === 'register' && !formData.confirmEmail) {
+      newErrors.confirmEmail = 'Please confirm your email';
+    } else if (mode === 'register' && formData.email !== formData.confirmEmail) {
+      newErrors.confirmEmail = 'Emails do not match';
+    }
+
     if (!formData.password) {
       newErrors.password = 'Password is required';
     } else if (formData.password.length < 6) {
       newErrors.password = 'Password must be at least 6 characters';
+    }
+
+    if (mode === 'register' && !formData.confirmPassword) {
+      newErrors.confirmPassword = 'Please confirm your password';
+    } else if (mode === 'register' && formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
     }
 
     if (mode === 'register') {
@@ -78,11 +92,13 @@ const AuthModal: React.FC<AuthModalProps> = ({
           setErrors({ general: 'Invalid email or password' });
         }
       } else if (mode === 'register') {
-        const success = await register(formData);
-        if (success) {
-          onClose();
-        } else {
-          setErrors({ general: 'Registration failed. Please try again.' });
+        try {
+          const success = await register(formData);
+          if (success) {
+            onClose();
+          }
+        } catch (error: any) {
+          setErrors({ general: error.message || 'Registration failed. Please try again.' });
         }
       }
     } catch (error) {
@@ -98,7 +114,9 @@ const AuthModal: React.FC<AuthModalProps> = ({
   const resetForm = () => {
     setFormData({
       email: '',
+      confirmEmail: '',
       password: '',
+      confirmPassword: '',
       name: '',
       phone: '',
       location: '',
@@ -239,6 +257,18 @@ const AuthModal: React.FC<AuthModalProps> = ({
         error={errors.email}
       />
 
+      {mode === 'register' && (
+        <Input
+          name="confirmEmail"
+          type="email"
+          placeholder="Confirm email address"
+          value={formData.confirmEmail}
+          onChange={handleInputChange}
+          leftIcon={<Mail size={20} />}
+          error={errors.confirmEmail}
+        />
+      )}
+
       <Input
         name="password"
         type={showPassword ? 'text' : 'password'}
@@ -257,6 +287,27 @@ const AuthModal: React.FC<AuthModalProps> = ({
         }
         error={errors.password}
       />
+
+      {mode === 'register' && (
+        <Input
+          name="confirmPassword"
+          type={showPassword ? 'text' : 'password'}
+          placeholder="Confirm password"
+          value={formData.confirmPassword}
+          onChange={handleInputChange}
+          leftIcon={<Lock size={20} />}
+          rightIcon={
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="hover:text-gray-600"
+            >
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
+          }
+          error={errors.confirmPassword}
+        />
+      )}
 
       <Button
         type="submit"

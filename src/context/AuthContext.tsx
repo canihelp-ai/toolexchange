@@ -113,8 +113,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       if (authError) {
         console.error('Registration error:', authError);
-        setIsLoading(false);
-        return false;
+        // Handle specific error cases
+        if (authError.message === 'User already registered') {
+          throw new Error('An account with this email already exists. Please try logging in instead.');
+        }
+        throw new Error(authError.message || 'Registration failed. Please try again.');
       }
 
       if (authData.user) {
@@ -132,16 +135,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const { error: profileError } = await createProfile(profileData);
         if (profileError) {
           console.error('Profile creation error:', profileError);
-          setIsLoading(false);
-          return false;
+          throw new Error('Failed to create user profile. Please try again.');
         }
       }
 
+      setIsLoading(false);
       return true;
     } catch (error) {
       console.error('Registration error:', error);
       setIsLoading(false);
-      return false;
+      throw error;
     }
   };
 
