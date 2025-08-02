@@ -44,6 +44,9 @@ const ToolDetailPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  // Debug logging
+  console.log('ToolDetailPage rendering with tool:', tool?.title, 'price:', tool?.pricing.daily);
+
   const [isRentModalOpen, setIsRentModalOpen] = useState(false);
   const [isBidModalOpen, setIsBidModalOpen] = useState(false);
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);

@@ -22,6 +22,9 @@ const ToolCard: React.FC<ToolCardProps> = ({
   const navigate = useNavigate();
   const { formatCurrency } = useCurrency();
 
+  // Debug logging
+  console.log('ToolCard rendering with tool price:', tool.pricing.daily);
+
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onFavorite(tool.id);
