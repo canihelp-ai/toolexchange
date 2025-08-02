@@ -30,7 +30,7 @@ import Rating from '../ui/Rating';
 import Modal from '../ui/Modal';
 import Input from '../ui/Input';
 import { Tool } from '../../types';
-import { formatCurrency, formatDate } from '../../utils/format';
+import { formatDate } from '../../utils/format';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useCurrency } from '../../context/CurrencyContext';

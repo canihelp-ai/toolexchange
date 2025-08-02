@@ -6,8 +6,8 @@ import Input from '../ui/Input';
 import Badge from '../ui/Badge';
 import Rating from '../ui/Rating';
 import { useAuth } from '../../context/AuthContext';
-import { formatRelativeTime } from '../../utils/format';
 import { useCurrency } from '../../context/CurrencyContext';
+import { formatRelativeTime } from '../../utils/format';
 
 interface Review {
   id: string;

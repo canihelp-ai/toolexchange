@@ -5,7 +5,6 @@ import Card from '../ui/Card';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
 import Rating from '../ui/Rating';
-import { formatCurrency } from '../../utils/format';
 import { Tool } from '../../types';
 import { useCurrency } from '../../context/CurrencyContext';
 

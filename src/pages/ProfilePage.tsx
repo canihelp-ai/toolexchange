@@ -7,8 +7,8 @@ import Badge from '../components/ui/Badge';
 import Rating from '../components/ui/Rating';
 import Modal from '../components/ui/Modal';
 import { useAuth } from '../context/AuthContext';
-import { formatDate } from '../utils/format';
 import { supabase } from '../lib/supabase';
+import { formatDate } from '../utils/format';
 
 const ProfilePage: React.FC = () => {
   const { user } = useAuth();

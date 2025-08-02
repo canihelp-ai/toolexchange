@@ -5,7 +5,6 @@ import Button from '../ui/Button';
 import Input from '../ui/Input';
 import { FilterOptions } from '../../types';
 import { categories } from '../../data/mockData';
-import { useCurrency } from '../../context/CurrencyContext';
 
 interface FilterModalProps {
   isOpen: boolean;
@@ -21,7 +20,6 @@ const FilterModal: React.FC<FilterModalProps> = ({
   currentFilters,
 }) => {
   const [filters, setFilters] = useState<FilterOptions>(currentFilters);
-  const { formatCurrency } = useCurrency();
 
   const handleFilterChange = (key: keyof FilterOptions, value: any) => {
     setFilters(prev => ({ ...prev, [key]: value }));
@@ -80,7 +78,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
           <div className="flex items-center space-x-4">
             <Input
               type="number"
-              placeholder={`Min (${formatCurrency(0).replace(/[\d.]/g, '').trim()})`}
+              placeholder="Min"
               value={filters.priceRange?.[0] || ''}
               onChange={(e) => handlePriceRangeChange(0, parseInt(e.target.value) || 0)}
               className="w-24"
@@ -88,7 +86,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
             <span>to</span>
             <Input
               type="number"
-              placeholder={`Max (${formatCurrency(0).replace(/[\d.]/g, '').trim()})`}
+              placeholder="Max"
               value={filters.priceRange?.[1] || ''}
               onChange={(e) => handlePriceRangeChange(1, parseInt(e.target.value) || 1000)}
               className="w-24"

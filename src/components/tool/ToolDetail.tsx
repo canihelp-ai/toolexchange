@@ -5,7 +5,7 @@ import Button from '../ui/Button';
 import Badge from '../ui/Badge';
 import Rating from '../ui/Rating';
 import { Tool, Booking } from '../../types';
-import { formatCurrency, formatDate } from '../../utils/format';
+import { formatDate } from '../../utils/format';
 import { useCurrency } from '../../context/CurrencyContext';
 
 interface ToolDetailProps {
