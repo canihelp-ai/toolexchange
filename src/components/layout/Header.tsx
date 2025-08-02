@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Filter, Bell, User, Menu, MessageCircle, Settings, LogOut } from 'lucide-react';
+import { Search, Filter, Bell, User, Menu, MessageCircle, Settings, LogOut, Home } from 'lucide-react';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 import AuthModal from '../auth/AuthModal';

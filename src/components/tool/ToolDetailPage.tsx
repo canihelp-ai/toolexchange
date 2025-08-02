@@ -632,11 +632,19 @@ const ToolDetailPage: React.FC = () => {
                     )}
                   </div>
                   <div className="flex flex-col space-y-2">
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={handleContactOwner}
+                    >
                       <MessageCircle size={16} className="mr-1" />
                       Message
                     </Button>
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => navigate(`/profile/${tool.owner.id}`)}
+                    >
                       <User size={16} className="mr-1" />
                       Profile
                     </Button>
