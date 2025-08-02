@@ -7,6 +7,8 @@ import HomePage from './components/home/HomePage';
 import ToolDetailPage from './components/tool/ToolDetailPage';
 import DashboardLayout from './components/dashboard/DashboardLayout';
 import DashboardHome from './components/dashboard/DashboardHome';
+import DashboardMessages from './components/dashboard/DashboardMessages';
+import DashboardReviews from './components/dashboard/DashboardReviews';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import ProfilePage from './pages/ProfilePage';
 import SettingsPage from './pages/SettingsPage';
@@ -50,6 +52,16 @@ const AppContent: React.FC = () => {
         <Route path="/dashboard" element={
           <DashboardLayout>
             <DashboardHome />
+          </DashboardLayout>
+        } />
+        <Route path="/dashboard/messages" element={
+          <DashboardLayout>
+            <DashboardMessages />
+          </DashboardLayout>
+        } />
+        <Route path="/dashboard/reviews" element={
+          <DashboardLayout>
+            <DashboardReviews />
           </DashboardLayout>
         } />
       </Routes>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   Home, 
   Package, 
@@ -19,15 +19,16 @@ interface DashboardLayoutProps {
 }
 
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const getNavigationItems = () => {
     const baseItems = [
       { icon: Home, label: 'Overview', path: '/dashboard' },
       { icon: MessageCircle, label: 'Messages', path: '/dashboard/messages' },
       { icon: Star, label: 'Reviews', path: '/dashboard/reviews' },
-      { icon: Settings, label: 'Settings', path: '/dashboard/settings' },
+      { icon: Settings, label: 'Settings', path: '/settings' },
     ];
 
     switch (user?.role) {
@@ -62,6 +63,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     }
   };
 
+  const handleNavigation = (path: string) => {
+    if (path === '/settings') {
+      navigate('/settings');
+    }
+  };
   const navigationItems = getNavigationItems();
 
   return (
@@ -72,7 +78,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           <div className="p-6">
             <div className="flex items-center space-x-3 mb-8">
               <img
-                src={user?.avatar || 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=1'}
+                src={user?.avatar_url || 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=1'}
                 alt={user?.name}
                 className="w-12 h-12 rounded-full object-cover"
               />
@@ -88,7 +94,21 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                 const isActive = location.pathname === item.path;
 
                 return (
-                  <Link
+                  item.path === '/settings' ? (
+                    <button
+                      key={item.path}
+                      onClick={() => handleNavigation(item.path)}
+                      className={`flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors w-full text-left ${
+                        isActive
+                          ? 'bg-blue-50 text-blue-700'
+                          : 'text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      <Icon size={20} />
+                      <span>{item.label}</span>
+                    </button>
+                  ) : (
+                    <Link
                     key={item.path}
                     to={item.path}
                     className={`flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
@@ -100,6 +120,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                     <Icon size={20} />
                     <span>{item.label}</span>
                   </Link>
+                  )
                 );
               })}
             </nav>
