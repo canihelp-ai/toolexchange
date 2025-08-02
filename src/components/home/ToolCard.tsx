@@ -114,7 +114,7 @@ const ToolCard: React.FC<ToolCardProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <img
-              src={tool.owner.avatar || 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1'}
+              src={tool.owner.avatar_url || tool.owner.avatar || 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1'}
               alt={tool.owner.name}
               className="w-6 h-6 rounded-full object-cover"
               onError={(e) => {

@@ -27,6 +27,9 @@ const Header: React.FC = () => {
     setIsProfileMenuOpen(false);
     
     switch (action) {
+      case 'home':
+        navigate('/');
+        break;
       case 'profile':
         navigate('/profile');
         break;
@@ -52,7 +55,12 @@ const Header: React.FC = () => {
           {/* Logo */}
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <h1 className="text-xl font-bold text-blue-600">ToolShare</h1>
+              <button
+                onClick={() => navigate('/')}
+                className="text-xl font-bold text-blue-600 hover:text-blue-700 transition-colors"
+              >
+                ToolShare
+              </button>
             </div>
           </div>
 
@@ -122,6 +130,13 @@ const Header: React.FC = () => {
 
                   {isProfileMenuOpen && (
                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                      <button
+                        onClick={() => handleProfileAction('home')}
+                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        <Home size={16} className="mr-3" />
+                        Home
+                      </button>
                       <button
                         onClick={() => handleProfileAction('profile')}
                         className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
