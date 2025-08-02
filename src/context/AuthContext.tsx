@@ -44,14 +44,78 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Profile loading function with proper error handling
+  const loadProfile = async (userId: string): Promise<Profile | null> => {
+    try {
+      console.log('Loading profile for user:', userId);
+      
+      // First try to get the profile
+      let { data: profiles, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId);
+
+      if (error) {
+        console.error('Error fetching profile:', error);
+        return null;
+      }
+
+      let profile = profiles && profiles.length > 0 ? profiles[0] : null;
+
+      // If profile doesn't exist, create it
+      if (!profile) {
+        console.log('Profile not found, creating new profile...');
+        
+        // Get user data from auth
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        
+        const newProfileData = {
+          id: userId,
+          email: authUser?.email || '',
+          name: authUser?.user_metadata?.name || `User ${userId.slice(0, 8)}`,
+          phone: authUser?.user_metadata?.phone || null,
+          location: authUser?.user_metadata?.location || '',
+          role: (authUser?.user_metadata?.role as 'renter' | 'owner' | 'operator') || 'renter',
+          bio: null,
+          avatar_url: null,
+          email_verified: !!authUser?.email_confirmed_at,
+          phone_verified: false,
+          id_verified: false,
+          rating: 0,
+          review_count: 0,
+          trust_score: 0,
+        };
+
+        const { data: newProfiles, error: createError } = await supabase
+          .from('profiles')
+          .insert([newProfileData])
+          .select();
+
+        if (createError) {
+          console.error('Error creating profile:', createError);
+          return null;
+        }
+        
+        profile = newProfiles && newProfiles.length > 0 ? newProfiles[0] : null;
+        console.log('Profile created successfully');
+      }
+      
+      return profile;
+    } catch (err) {
+      console.error('Failed to load profile:', err);
+      return null;
+    }
+  };
+
   useEffect(() => {
     let mounted = true;
 
+    // Initialize authentication
     const initializeAuth = async () => {
       try {
-        console.log('Initializing auth...');
+        console.log('Initializing authentication...');
         
-        // Get current session
+        // Check existing session
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
@@ -69,11 +133,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setAuthUser(currentUser);
           
           if (currentUser) {
-            await loadUserProfile(currentUser.id);
+            const profile = await loadProfile(currentUser.id);
+            if (mounted) {
+              setUser(profile);
+            }
           } else {
             setUser(null);
-            setIsLoading(false);
           }
+          
+          setIsLoading(false);
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
@@ -83,10 +151,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     };
 
-    // Initialize auth
-    initializeAuth();
-
-    // Listen for auth changes
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state changed:', { event, hasSession: !!session });
       
@@ -96,88 +161,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setAuthUser(currentUser);
       
       if (currentUser) {
-        await loadUserProfile(currentUser.id);
+        const profile = await loadProfile(currentUser.id);
+        if (mounted) {
+          setUser(profile);
+        }
       } else {
         setUser(null);
+      }
+      
+      if (mounted) {
         setIsLoading(false);
       }
     });
+
+    // Initialize auth
+    initializeAuth();
 
     return () => {
       mounted = false;
       subscription.unsubscribe();
     };
   }, []);
-
-  const loadUserProfile = async (userId: string) => {
-    console.log('Loading profile for user:', userId);
-    
-    try {
-      // Try to get existing profile
-      const { data: profiles, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId);
-
-      if (error) {
-        console.error('Error fetching profile:', error);
-        setIsLoading(false);
-        return;
-      }
-
-      let profile = profiles && profiles.length > 0 ? profiles[0] : null;
-
-      if (!profile) {
-        console.log('Profile not found, creating new profile...');
-        
-        // Get user data from auth
-        const { data: { user: authUser } } = await supabase.auth.getUser();
-        
-        const newProfileData = {
-          id: userId,
-          email: authUser?.email || '',
-          name: authUser?.user_metadata?.name || `User ${Math.random().toString(36).substring(2, 8)}`,
-          phone: authUser?.user_metadata?.phone || null,
-          location: authUser?.user_metadata?.location || '',
-          role: (authUser?.user_metadata?.role as 'renter' | 'owner' | 'operator') || 'renter',
-          bio: null,
-          avatar_url: null,
-          email_verified: !!authUser?.email_confirmed_at,
-          phone_verified: false,
-          id_verified: false,
-          rating: 0,
-          review_count: 0,
-          trust_score: 0,
-        };
-
-        const { data: createdProfiles, error: createError } = await supabase
-          .from('profiles')
-          .insert([newProfileData])
-          .select();
-
-        if (createError) {
-          console.error('Error creating profile:', createError);
-          setIsLoading(false);
-          return;
-        }
-        
-        profile = createdProfiles && createdProfiles.length > 0 ? createdProfiles[0] : null;
-      }
-      
-      if (profile) {
-        console.log('Profile loaded successfully:', profile.name);
-        setUser(profile);
-      } else {
-        console.error('Failed to load or create profile');
-        setUser(null);
-      }
-    } catch (error) {
-      console.error('Error in loadUserProfile:', error);
-      setUser(null);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
@@ -190,6 +194,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return false;
       }
       console.log('Login successful');
+      // Don't set loading to false here - let the auth state change handler do it
       return true;
     } catch (error) {
       console.error('Login error:', error);
@@ -201,6 +206,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const register = async (userData: RegisterData): Promise<boolean> => {
     setIsLoading(true);
     try {
+      console.log('Attempting registration for:', userData.email);
       const { data: authData, error: authError } = await signUp(userData.email, userData.password, {
         name: userData.name,
         role: userData.role,
@@ -217,7 +223,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       console.log('Registration successful');
-      setIsLoading(false);
+      // Don't set loading to false here - let the auth state change handler do it
       return true;
     } catch (error) {
       console.error('Registration error:', error);
@@ -254,7 +260,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       if (error) {
         console.error('Profile update error:', error);
-        setIsLoading(false);
         return false;
       }
       
@@ -264,7 +269,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return true;
     } catch (error) {
       console.error('Profile update error:', error);
-      setIsLoading(false);
       return false;
     } finally {
       setIsLoading(false);

@@ -107,6 +107,9 @@ const HomePage: React.FC = () => {
     setError(null);
     
     try {
+      // Test basic database connectivity
+      console.log('Testing database connection...');
+      
       const { data, error } = await supabase
         .from('tools')
         .select(`
@@ -121,17 +124,18 @@ const HomePage: React.FC = () => {
 
       if (error) {
         console.error('Error loading tools:', error);
-        setError(`Failed to load tools: ${error.message}`);
+        setError(`Database error: ${error.message}. Please check your connection.`);
       } else if (data) {
-        console.log('Tools loaded successfully:', data.length);
+        console.log(`Successfully loaded ${data.length} tools from database`);
         const transformedTools = data.map(transformTool);
         setTools(transformedTools);
       } else {
+        console.log('No tools found in database');
         setTools([]);
       }
     } catch (error) {
       console.error('Error loading tools:', error);
-      setError('Failed to load tools. Please try again.');
+      setError(`Network error: ${error instanceof Error ? error.message : 'Unknown error'}. Please check your internet connection.`);
     } finally {
       setIsLoading(false);
     }
