@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { CurrencyProvider } from './context/CurrencyContext';
 import LandingModal from './components/landing/LandingModal';
 import Header from './components/layout/Header';
 import HomePage from './components/home/HomePage';
@@ -73,9 +74,11 @@ const AppContent: React.FC = () => {
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <AppContent />
-      </Router>
+      <CurrencyProvider>
+        <Router>
+          <AppContent />
+        </Router>
+      </CurrencyProvider>
     </AuthProvider>
   );
 }

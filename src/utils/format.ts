@@ -1,6 +1,18 @@
 import { format, formatDistanceToNow } from 'date-fns';
 
-export const formatCurrency = (amount: number): string => {
+export const formatCurrency = (amount: number, currency: 'USD' | 'JMD' = 'USD'): string => {
+  const exchangeRate = 157.5; // 1 USD = 157.5 JMD (approximate)
+  
+  if (currency === 'JMD') {
+    const jmdAmount = amount * exchangeRate;
+    return new Intl.NumberFormat('en-JM', {
+      style: 'currency',
+      currency: 'JMD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(jmdAmount).replace('JMD', 'J$');
+  }
+  
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',

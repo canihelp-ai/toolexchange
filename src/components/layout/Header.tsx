@@ -1,17 +1,91 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Filter, Bell, User, Menu, MessageCircle, Settings, LogOut, Home } from 'lucide-react';
+import { Search, Filter, Bell, User, Menu, MessageCircle, Settings, LogOut, Home, X } from 'lucide-react';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
+import Modal from '../ui/Modal';
+import Badge from '../ui/Badge';
 import AuthModal from '../auth/AuthModal';
 import { useAuth } from '../../context/AuthContext';
+import { formatRelativeTime } from '../../utils/format';
 
 const Header: React.FC = () => {
   const navigate = useNavigate();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isMessagesOpen, setIsMessagesOpen] = useState(false);
   const [headerSearchQuery, setHeaderSearchQuery] = useState('');
+  const [currency, setCurrency] = useState<'USD' | 'JMD'>('USD');
   const { user, logout } = useAuth();
+
+  // Mock notifications data
+  const [notifications] = useState([
+    {
+      id: '1',
+      type: 'booking',
+      title: 'New Booking Request',
+      message: 'Sarah Johnson wants to rent your DeWalt drill',
+      read: false,
+      created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+      action_url: '/dashboard/bookings'
+    },
+    {
+      id: '2',
+      type: 'review',
+      title: 'New Review',
+      message: 'Mike Wilson left a 5-star review for your excavator',
+      read: true,
+      created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+      action_url: '/dashboard/reviews'
+    },
+    {
+      id: '3',
+      type: 'message',
+      title: 'New Message',
+      message: 'John Martinez sent you a message about tile saw rental',
+      read: false,
+      created_at: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(),
+      action_url: '/dashboard/messages'
+    }
+  ]);
+
+  // Mock recent messages data
+  const [recentMessages] = useState([
+    {
+      id: '1',
+      sender: {
+        name: 'Sarah Johnson',
+        avatar_url: 'https://images.pexels.com/photos/1438761/pexels-photo-1438761.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1'
+      },
+      content: 'Hi! Is the drill still available for this weekend?',
+      created_at: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
+      read: false
+    },
+    {
+      id: '2',
+      sender: {
+        name: 'Mike Wilson',
+        avatar_url: 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1'
+      },
+      content: 'Thanks for the excavator rental. Everything went smoothly!',
+      created_at: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
+      read: true
+    },
+    {
+      id: '3',
+      sender: {
+        name: 'John Martinez',
+        avatar_url: 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1'
+      },
+      content: 'Can you provide more details about the tile saw specifications?',
+      created_at: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(),
+      read: false
+    }
+  ]);
+
+  const unreadNotifications = notifications.filter(n => !n.read).length;
+  const unreadMessages = recentMessages.filter(m => !m.read).length;
 
   const handleHeaderSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,6 +121,17 @@ const Header: React.FC = () => {
     }
   };
 
+  const handleNotificationClick = (notification: any) => {
+    setIsNotificationsOpen(false);
+    if (notification.action_url) {
+      navigate(notification.action_url);
+    }
+  };
+
+  const handleMessageClick = () => {
+    setIsMessagesOpen(false);
+    navigate('/dashboard/messages');
+  };
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
@@ -91,6 +176,16 @@ const Header: React.FC = () => {
                 >
                   Search
                 </Button>
+                
+                {/* Currency Selector */}
+                <select
+                  value={currency}
+                  onChange={(e) => setCurrency(e.target.value as 'USD' | 'JMD')}
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                >
+                  <option value="USD">USD ($)</option>
+                  <option value="JMD">JMD (J$)</option>
+                </select>
               </div>
             </form>
           </div>
@@ -100,15 +195,33 @@ const Header: React.FC = () => {
             {user ? (
               <>
                 {/* Notifications */}
-                <Button variant="ghost" size="sm" className="p-2 relative">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="p-2 relative"
+                  onClick={() => setIsNotificationsOpen(true)}
+                >
                   <Bell size={20} />
-                  <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+                  {unreadNotifications > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                      {unreadNotifications}
+                    </span>
+                  )}
                 </Button>
 
                 {/* Messages */}
-                <Button variant="ghost" size="sm" className="p-2 relative">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="p-2 relative"
+                  onClick={() => setIsMessagesOpen(true)}
+                >
                   <MessageCircle size={20} />
-                  <span className="absolute top-0 right-0 w-2 h-2 bg-green-500 rounded-full"></span>
+                  {unreadMessages > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 text-white text-xs rounded-full flex items-center justify-center">
+                      {unreadMessages}
+                    </span>
+                  )}
                 </Button>
 
                 {/* Profile Menu */}
@@ -190,6 +303,129 @@ const Header: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Notifications Modal */}
+      <Modal
+        isOpen={isNotificationsOpen}
+        onClose={() => setIsNotificationsOpen(false)}
+        title="Notifications"
+        size="md"
+      >
+        <div className="space-y-4">
+          {notifications.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <Bell size={48} className="mx-auto mb-4 text-gray-300" />
+              <p>No notifications yet</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {notifications.map((notification) => (
+                <div
+                  key={notification.id}
+                  onClick={() => handleNotificationClick(notification)}
+                  className={`p-4 rounded-lg border cursor-pointer hover:bg-gray-50 transition-colors ${
+                    !notification.read ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-200'
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2">
+                        <h4 className="font-medium text-gray-900">{notification.title}</h4>
+                        {!notification.read && (
+                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
+                      <p className="text-xs text-gray-500 mt-2">
+                        {formatRelativeTime(notification.created_at)}
+                      </p>
+                    </div>
+                    <Badge 
+                      variant={notification.type === 'booking' ? 'info' : notification.type === 'review' ? 'success' : 'default'}
+                      size="sm"
+                      className="capitalize"
+                    >
+                      {notification.type}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="pt-4 border-t">
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => {
+                setIsNotificationsOpen(false);
+                navigate('/dashboard');
+              }}
+            >
+              View All Notifications
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Messages Modal */}
+      <Modal
+        isOpen={isMessagesOpen}
+        onClose={() => setIsMessagesOpen(false)}
+        title="Recent Messages"
+        size="md"
+      >
+        <div className="space-y-4">
+          {recentMessages.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <MessageCircle size={48} className="mx-auto mb-4 text-gray-300" />
+              <p>No messages yet</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {recentMessages.map((message) => (
+                <div
+                  key={message.id}
+                  onClick={handleMessageClick}
+                  className={`p-4 rounded-lg border cursor-pointer hover:bg-gray-50 transition-colors ${
+                    !message.read ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200'
+                  }`}
+                >
+                  <div className="flex items-start space-x-3">
+                    <img
+                      src={message.sender.avatar_url}
+                      alt={message.sender.name}
+                      className="w-10 h-10 rounded-full object-cover"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-medium text-gray-900">{message.sender.name}</h4>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-xs text-gray-500">
+                            {formatRelativeTime(message.created_at)}
+                          </span>
+                          {!message.read && (
+                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-sm text-gray-600 mt-1">{message.content}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="pt-4 border-t">
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={handleMessageClick}
+            >
+              View All Messages
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       <AuthModal
         isOpen={isAuthModalOpen}
