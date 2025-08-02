@@ -351,6 +351,9 @@ const DashboardMessages: React.FC = () => {
                         src={message.sender.avatar_url || 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1'}
                         alt={message.sender.name}
                         className="w-8 h-8 rounded-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.src = 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1';
+                        }}
                       />
                       <div className={`px-4 py-2 rounded-lg ${
                         message.sender_id === user?.id

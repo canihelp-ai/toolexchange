@@ -614,9 +614,15 @@ const ToolDetailPage: React.FC = () => {
                 <h3 className="text-lg font-semibold mb-4">Tool Owner</h3>
                 <div className="flex items-center space-x-4">
                   <img
-                    src={tool.owner.avatar}
+                    src={tool?.owner.avatar || 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1'}
                     alt={tool.owner.name}
                     className="w-16 h-16 rounded-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.src = 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1';
+                    }}
+                    onError={(e) => {
+                      e.currentTarget.src = 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1';
+                    }}
                   />
                   <div className="flex-1">
                     <h4 className="font-medium text-gray-900">{tool.owner.name}</h4>
