@@ -21,19 +21,6 @@ const Header: React.FC = () => {
     window.location.href = `/?${searchParams.toString()}`;
   };
 
-  const handleProfileAction = (action: string) => {
-    setIsProfileMenuOpen(false);
-    if (action === 'logout') {
-      logout();
-    } else if (action === 'dashboard') {
-      // Use React Router navigation instead of window.location
-      console.log('Navigate to dashboard');
-    } else if (action === 'profile') {
-      console.log('Navigate to profile');
-    } else if (action === 'settings') {
-      console.log('Navigate to settings');
-    }
-  };
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">

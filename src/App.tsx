@@ -8,6 +8,8 @@ import ToolDetailPage from './components/tool/ToolDetailPage';
 import DashboardLayout from './components/dashboard/DashboardLayout';
 import DashboardHome from './components/dashboard/DashboardHome';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import ProfilePage from './pages/ProfilePage';
+import SettingsPage from './pages/SettingsPage';
 
 const AppContent: React.FC = () => {
   const { user, isLoading: authLoading } = useAuth();
@@ -43,6 +45,18 @@ const AppContent: React.FC = () => {
         <Route path="/" element={<HomePage />} />
         <Route path="/tool/:id" element={<ToolDetailPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/profile" element={
+          <div>
+            <Header />
+            <ProfilePage />
+          </div>
+        } />
+        <Route path="/settings" element={
+          <div>
+            <Header />
+            <SettingsPage />
+          </div>
+        } />
         <Route path="/dashboard" element={
           <DashboardLayout>
             <DashboardHome />
