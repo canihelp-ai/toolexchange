@@ -299,21 +299,23 @@ const ToolDetailPage: React.FC = () => {
     setIsSendingMessage(true);
 
     try {
-      // Find existing chat (use .maybeSingle() instead of .single())
+      // Find existing chat between these two users
       const { data: existingChat } = await supabase
         .from('chats')
         .select('id')
-        .contains('participants', [user?.id, tool?.ownerId])
-        .maybeSingle(); // This allows for 0 or 1 row
+        .or(`participants.cs.{${user.id},${tool.ownerId}},participants.cs.{${tool.ownerId},${user.id}}`)
+        .maybeSingle();
 
       let chatId = existingChat?.id;
 
       if (!chatId) {
-        // Create new chat only if one doesn't exist
+        // Create new chat
         const { data: newChat, error: chatError } = await supabase
           .from('chats')
           .insert([{
-            participants: [user?.id, tool?.ownerId]
+            participants: [user.id, tool.ownerId],
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
           }])
           .select('id')
           .single();
@@ -327,21 +329,29 @@ const ToolDetailPage: React.FC = () => {
         .from('messages')
         .insert([{
           chat_id: chatId,
-          sender_id: user?.id,
+          sender_id: user.id,
           content: `Subject: ${contactSubject}\n\n${contactMessage}`,
-          type: 'text'
+          type: 'text',
+          read: false,
+          created_at: new Date().toISOString()
         }]);
 
       if (messageError) throw messageError;
+
+      // Update chat timestamp
+      await supabase
+        .from('chats')
+        .update({ updated_at: new Date().toISOString() })
+        .eq('id', chatId);
 
       // Create notification for owner
       await supabase
         .from('notifications')
         .insert([{
-          user_id: tool?.ownerId,
+          user_id: tool.ownerId,
           type: 'message',
           title: 'New Message',
-          message: `${user?.name} sent you a message about ${tool?.title}`,
+          message: `${user.name} sent you a message about ${tool.title}`,
           action_url: `/dashboard/messages`
         }]);
 

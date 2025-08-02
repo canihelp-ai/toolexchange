@@ -58,62 +58,78 @@ const DashboardMessages: React.FC = () => {
     try {
       setIsLoading(true);
       
-      // Mock data for demonstration
-      const mockChats: Chat[] = [
-        {
-          id: '1',
-          participants: [user.id, 'user2'],
-          lastMessage: {
-            content: 'Hi! Is the drill still available for this weekend?',
-            created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-            sender_id: 'user2'
-          },
-          otherUser: {
-            id: 'user2',
-            name: 'Sarah Johnson',
-            avatar_url: 'https://images.pexels.com/photos/1438761/pexels-photo-1438761.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1',
-            online: true
-          },
-          unreadCount: 2
-        },
-        {
-          id: '2',
-          participants: [user.id, 'user3'],
-          lastMessage: {
-            content: 'Thanks for the excavator rental. Everything went smoothly!',
-            created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-            sender_id: 'user3'
-          },
-          otherUser: {
-            id: 'user3',
-            name: 'Mike Wilson',
-            avatar_url: 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1',
-            online: false
-          },
-          unreadCount: 0
-        },
-        {
-          id: '3',
-          participants: [user.id, 'user4'],
-          lastMessage: {
-            content: 'Can you provide more details about the tile saw specifications?',
-            created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-            sender_id: user.id
-          },
-          otherUser: {
-            id: 'user4',
-            name: 'John Martinez',
-            avatar_url: 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1',
-            online: true
-          },
-          unreadCount: 0
-        }
-      ];
+      // Load chats from database
+      const { data: chatsData, error: chatsError } = await supabase
+        .from('chats')
+        .select(`
+          id,
+          participants,
+          created_at,
+          updated_at,
+          messages!inner (
+            id,
+            content,
+            sender_id,
+            created_at,
+            read
+          )
+        `)
+        .contains('participants', [user.id])
+        .order('updated_at', { ascending: false });
 
-      setChats(mockChats);
-      if (mockChats.length > 0) {
-        setSelectedChat(mockChats[0]);
-        loadMessages(mockChats[0].id);
+      if (chatsError) {
+        console.error('Error loading chats:', chatsError);
+        return;
+      }
+
+      // Transform chats data
+      const transformedChats: Chat[] = [];
+      
+      for (const chat of chatsData || []) {
+        // Get the other participant
+        const otherUserId = chat.participants.find((id: string) => id !== user.id);
+        if (!otherUserId) continue;
+
+        // Get other user's profile
+        const { data: otherUserProfile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', otherUserId)
+          .single();
+
+        if (!otherUserProfile) continue;
+
+        // Get last message
+        const lastMessage = chat.messages?.[chat.messages.length - 1];
+        if (!lastMessage) continue;
+
+        // Count unread messages
+        const unreadCount = chat.messages?.filter((msg: any) => 
+          msg.sender_id !== user.id && !msg.read
+        ).length || 0;
+
+        transformedChats.push({
+          id: chat.id,
+          participants: chat.participants,
+          lastMessage: {
+            content: lastMessage.content,
+            created_at: lastMessage.created_at,
+            sender_id: lastMessage.sender_id
+          },
+          otherUser: {
+            id: otherUserProfile.id,
+            name: otherUserProfile.name,
+            avatar_url: otherUserProfile.avatar_url || 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1',
+            online: Math.random() > 0.5 // Simulate online status
+          },
+          unreadCount
+        });
+      }
+
+      setChats(transformedChats);
+      if (transformedChats.length > 0) {
+        setSelectedChat(transformedChats[0]);
+        loadMessages(transformedChats[0].id);
       }
     } catch (error) {
       console.error('Error loading chats:', error);
@@ -124,61 +140,50 @@ const DashboardMessages: React.FC = () => {
 
   const loadMessages = async (chatId: string) => {
     try {
-      // Mock messages for demonstration
-      const mockMessages: Message[] = [
-        {
-          id: '1',
-          content: 'Hi! I saw your DeWalt drill listing. Is it still available?',
-          sender_id: 'user2',
-          created_at: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
-          sender: {
-            name: 'Sarah Johnson',
-            avatar_url: 'https://images.pexels.com/photos/1438761/pexels-photo-1438761.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1'
-          }
-        },
-        {
-          id: '2',
-          content: 'Yes, it\'s available! When would you need it?',
-          sender_id: user?.id || '',
-          created_at: new Date(Date.now() - 1000 * 60 * 50).toISOString(),
-          sender: {
-            name: user?.name || '',
-            avatar_url: user?.avatar_url || ''
-          }
-        },
-        {
-          id: '3',
-          content: 'Perfect! I need it for this weekend. What\'s the daily rate?',
-          sender_id: 'user2',
-          created_at: new Date(Date.now() - 1000 * 60 * 40).toISOString(),
-          sender: {
-            name: 'Sarah Johnson',
-            avatar_url: 'https://images.pexels.com/photos/1438761/pexels-photo-1438761.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1'
-          }
-        },
-        {
-          id: '4',
-          content: 'It\'s $45 per day. Includes 2 batteries and charger.',
-          sender_id: user?.id || '',
-          created_at: new Date(Date.now() - 1000 * 60 * 35).toISOString(),
-          sender: {
-            name: user?.name || '',
-            avatar_url: user?.avatar_url || ''
-          }
-        },
-        {
-          id: '5',
-          content: 'Hi! Is the drill still available for this weekend?',
-          sender_id: 'user2',
-          created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-          sender: {
-            name: 'Sarah Johnson',
-            avatar_url: 'https://images.pexels.com/photos/1438761/pexels-photo-1438761.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1'
-          }
-        }
-      ];
+      // Load messages from database
+      const { data: messagesData, error: messagesError } = await supabase
+        .from('messages')
+        .select(`
+          id,
+          content,
+          sender_id,
+          created_at,
+          read,
+          sender:profiles!messages_sender_id_fkey (
+            id,
+            name,
+            avatar_url
+          )
+        `)
+        .eq('chat_id', chatId)
+        .order('created_at', { ascending: true });
 
-      setMessages(mockMessages);
+      if (messagesError) {
+        console.error('Error loading messages:', messagesError);
+        return;
+      }
+
+      const transformedMessages: Message[] = (messagesData || []).map((msg: any) => ({
+        id: msg.id,
+        content: msg.content,
+        sender_id: msg.sender_id,
+        created_at: msg.created_at,
+        sender: {
+          name: msg.sender?.name || 'Unknown User',
+          avatar_url: msg.sender?.avatar_url || 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1'
+        }
+      }));
+
+      setMessages(transformedMessages);
+
+      // Mark messages as read
+      if (transformedMessages.length > 0) {
+        await supabase
+          .from('messages')
+          .update({ read: true })
+          .eq('chat_id', chatId)
+          .neq('sender_id', user?.id);
+      }
     } catch (error) {
       console.error('Error loading messages:', error);
     }
@@ -189,19 +194,71 @@ const DashboardMessages: React.FC = () => {
 
     setIsSending(true);
     try {
-      const message: Message = {
-        id: Date.now().toString(),
-        content: newMessage,
-        sender_id: user.id,
-        created_at: new Date().toISOString(),
+      // Insert message into database
+      const { data: messageData, error: messageError } = await supabase
+        .from('messages')
+        .insert([{
+          chat_id: selectedChat.id,
+          sender_id: user.id,
+          content: newMessage,
+          type: 'text',
+          read: false
+        }])
+        .select(`
+          id,
+          content,
+          sender_id,
+          created_at,
+          sender:profiles!messages_sender_id_fkey (
+            id,
+            name,
+            avatar_url
+          )
+        `)
+        .single();
+
+      if (messageError) {
+        console.error('Error sending message:', messageError);
+        return;
+      }
+
+      // Update chat's updated_at timestamp
+      await supabase
+        .from('chats')
+        .update({ updated_at: new Date().toISOString() })
+        .eq('id', selectedChat.id);
+
+      // Transform and add message to local state
+      const newMessageObj: Message = {
+        id: messageData.id,
+        content: messageData.content,
+        sender_id: messageData.sender_id,
+        created_at: messageData.created_at,
         sender: {
-          name: user.name,
-          avatar_url: user.avatar_url || ''
+          name: messageData.sender?.name || user.name,
+          avatar_url: messageData.sender?.avatar_url || user.avatar_url || ''
         }
       };
 
-      setMessages(prev => [...prev, message]);
+      setMessages(prev => [...prev, newMessageObj]);
       setNewMessage('');
+
+      // Create notification for other participant
+      const otherUserId = selectedChat.participants.find(id => id !== user.id);
+      if (otherUserId) {
+        await supabase
+          .from('notifications')
+          .insert([{
+            user_id: otherUserId,
+            type: 'message',
+            title: 'New Message',
+            message: `${user.name} sent you a message`,
+            action_url: '/dashboard/messages'
+          }]);
+      }
+
+      // Refresh chats to update last message
+      loadChats();
     } catch (error) {
       console.error('Error sending message:', error);
     } finally {
@@ -212,6 +269,30 @@ const DashboardMessages: React.FC = () => {
   const filteredChats = chats.filter(chat =>
     chat.otherUser.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Set up real-time subscription for new messages
+  useEffect(() => {
+    if (!selectedChat) return;
+
+    const subscription = supabase
+      .channel(`messages:${selectedChat.id}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages',
+        filter: `chat_id=eq.${selectedChat.id}`
+      }, (payload) => {
+        // Only add message if it's not from current user (to avoid duplicates)
+        if (payload.new.sender_id !== user?.id) {
+          loadMessages(selectedChat.id);
+        }
+      })
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [selectedChat, user?.id]);
 
   if (isLoading) {
     return (
