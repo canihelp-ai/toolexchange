@@ -75,55 +75,56 @@ export const useTools = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { session, isLoading: authLoading } = useAuth();
+  const mounted = useRef(true);
+
+  const loadTools = async () => {
+    try {
+      console.log('Loading tools from database...');
+      setIsLoading(true);
+      setError(null);
+      
+      const { data, error } = await supabase
+        .from('tools')
+        .select(`
+          *,
+          owner:profiles!tools_owner_id_fkey(*),
+          tool_images(*),
+          tool_availability(*)
+        `)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false });
+
+      if (!mounted.current) return;
+      if (error) throw error;
+
+      console.log(`Successfully loaded ${data?.length || 0} tools from database`);
+      const transformedTools = data ? data.map(transformTool) : [];
+      setTools(transformedTools);
+    } catch (err) {
+      if (!mounted.current) return;
+      console.error('Tools loading error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load tools');
+    } finally {
+      if (mounted.current) setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     // Load tools regardless of authentication status (tools should be publicly viewable)
-    loadTools();
-
-    const loadTools = async () => {
-      try {
-        console.log('Loading tools from database...');
-        setIsLoading(true);
-        setError(null);
-        
-        const { data, error } = await supabase
-          .from('tools')
-          .select(`
-            *,
-            owner:profiles!tools_owner_id_fkey(*),
-            tool_images(*),
-            tool_availability(*)
-          `)
-          .eq('status', 'active')
-          .order('created_at', { ascending: false });
-
-        if (!mounted) return;
-        if (error) throw error;
-
-        console.log(`Successfully loaded ${data?.length || 0} tools from database`);
-        const transformedTools = data ? data.map(transformTool) : [];
-        setTools(transformedTools);
-      } catch (err) {
-        if (!mounted) return;
-        console.error('Tools loading error:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load tools');
-      } finally {
-        if (mounted) setIsLoading(false);
-      }
-    };
+    mounted.current = true;
 
     // Load tools regardless of session status (tools should be publicly viewable)
     loadTools();
 
     return () => {
-      mounted = false;
+      mounted.current = false;
     };
   }, [session, authLoading]);
 
   const refetch = () => {
     setIsLoading(true);
     setError(null);
-    // This will trigger the useEffect to reload
+    loadTools();
   };
 
   return { tools, isLoading, error, refetch };
