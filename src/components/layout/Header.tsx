@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, Filter, Bell, User, Menu, MessageCircle, Settings, LogOut } from 'lucide-react';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
@@ -6,6 +7,7 @@ import AuthModal from '../auth/AuthModal';
 import { useAuth } from '../../context/AuthContext';
 
 const Header: React.FC = () => {
+  const navigate = useNavigate();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [headerSearchQuery, setHeaderSearchQuery] = useState('');
@@ -19,6 +21,27 @@ const Header: React.FC = () => {
       searchParams.set('search', headerSearchQuery.trim());
     }
     window.location.href = `/?${searchParams.toString()}`;
+  };
+
+  const handleProfileAction = (action: string) => {
+    setIsProfileMenuOpen(false);
+    
+    switch (action) {
+      case 'profile':
+        navigate('/profile');
+        break;
+      case 'dashboard':
+        navigate('/dashboard');
+        break;
+      case 'settings':
+        navigate('/settings');
+        break;
+      case 'logout':
+        logout();
+        break;
+      default:
+        console.log('Unknown action:', action);
+    }
   };
 
 
