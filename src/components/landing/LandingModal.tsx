@@ -9,8 +9,10 @@ interface LandingModalProps {
 }
 
 const LandingModal: React.FC<LandingModalProps> = ({ onAuthSuccess }) => {
-  const [mode, setMode] = useState<'welcome' | 'role-selection' | 'login' | 'register'>('welcome');
+  const [mode, setMode] = useState<'welcome' | 'role-selection' | 'login' | 'register' | 'forgot-password'>('welcome');
   const [showPassword, setShowPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetEmailSent, setResetEmailSent] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     confirmEmail: '',
@@ -22,7 +24,7 @@ const LandingModal: React.FC<LandingModalProps> = ({ onAuthSuccess }) => {
     role: 'renter' as 'renter' | 'owner' | 'operator',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const { login, register, isLoading, error: authError } = useAuth();
+  const { login, register, sendPasswordResetEmail, isLoading, error: authError } = useAuth();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -32,9 +34,24 @@ const LandingModal: React.FC<LandingModalProps> = ({ onAuthSuccess }) => {
     }
   };
 
+  const handleResetEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setResetEmail(e.target.value);
+    if (errors.resetEmail) {
+      setErrors(prev => ({ ...prev, resetEmail: '' }));
+    }
+  };
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
+    if (mode === 'forgot-password') {
+      if (!resetEmail) {
+        newErrors.resetEmail = 'Email is required';
+      } else if (!/\S+@\S+\.\S+/.test(resetEmail)) {
+        newErrors.resetEmail = 'Please enter a valid email';
+      }
+      setErrors(newErrors);
+      return Object.keys(newErrors).length === 0;
+    }
     if (!formData.email) {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
@@ -76,6 +93,15 @@ const LandingModal: React.FC<LandingModalProps> = ({ onAuthSuccess }) => {
     e.preventDefault();
     if (!validateForm()) return;
 
+    if (mode === 'forgot-password') {
+      try {
+        await sendPasswordResetEmail(resetEmail);
+        setResetEmailSent(true);
+      } catch (err) {
+        // Error is handled in auth context
+      }
+      return;
+    }
     try {
       if (mode === 'login') {
         await login(formData.email, formData.password);
@@ -104,11 +130,13 @@ const LandingModal: React.FC<LandingModalProps> = ({ onAuthSuccess }) => {
       location: '',
       role: 'renter',
     });
+    setResetEmail('');
+    setResetEmailSent(false);
     setErrors({});
     setShowPassword(false);
   };
 
-  const handleModeChange = (newMode: 'welcome' | 'role-selection' | 'login' | 'register') => {
+  const handleModeChange = (newMode: 'welcome' | 'role-selection' | 'login' | 'register' | 'forgot-password') => {
     setMode(newMode);
     resetForm();
   };
@@ -231,6 +259,76 @@ const LandingModal: React.FC<LandingModalProps> = ({ onAuthSuccess }) => {
     </div>
   );
 
+  const renderForgotPassword = () => (
+    <div className="space-y-6">
+      <div className="text-center mb-6">
+        <h3 className="text-2xl font-bold text-gray-900 mb-2">Reset Your Password</h3>
+        <p className="text-gray-600">
+          {resetEmailSent 
+            ? "Check your email for a password reset link"
+            : "Enter your email address and we'll send you a link to reset your password"
+          }
+        </p>
+      </div>
+
+      {resetEmailSent ? (
+        <div className="text-center space-y-4">
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <p className="text-green-800">
+              Password reset email sent to <strong>{resetEmail}</strong>
+            </p>
+            <p className="text-sm text-green-600 mt-2">
+              Check your inbox and click the link to reset your password.
+            </p>
+          </div>
+          <Button
+            onClick={() => handleModeChange('login')}
+            variant="outline"
+            className="w-full"
+          >
+            Back to Sign In
+          </Button>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {(errors.general || authError) && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <p className="text-sm text-red-600">{errors.general || authError}</p>
+            </div>
+          )}
+
+          <Input
+            name="resetEmail"
+            type="email"
+            placeholder="Enter your email address"
+            value={resetEmail}
+            onChange={handleResetEmailChange}
+            leftIcon={<Mail size={20} />}
+            error={errors.resetEmail}
+          />
+
+          <Button
+            type="submit"
+            className="w-full"
+            size="lg"
+            isLoading={isLoading}
+          >
+            Send Reset Link
+          </Button>
+
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={() => handleModeChange('login')}
+              className="text-blue-600 hover:text-blue-800 font-medium"
+            >
+              Back to Sign In
+            </button>
+          </div>
+        </form>
+      )}
+    </div>
+  );
   const renderAuthForm = () => (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="text-center mb-6">
@@ -344,6 +442,17 @@ const LandingModal: React.FC<LandingModalProps> = ({ onAuthSuccess }) => {
         {mode === 'login' ? 'Sign In' : 'Create Account'}
       </Button>
 
+      {mode === 'login' && (
+        <div className="text-center">
+          <button
+            type="button"
+            onClick={() => handleModeChange('forgot-password')}
+            className="text-sm text-blue-600 hover:text-blue-800"
+          >
+            Forgot your password?
+          </button>
+        </div>
+      )}
       <div className="text-center">
         <button
           type="button"
@@ -364,6 +473,7 @@ const LandingModal: React.FC<LandingModalProps> = ({ onAuthSuccess }) => {
         <div className="p-8 md:p-12">
           {mode === 'welcome' && renderWelcome()}
           {mode === 'role-selection' && renderRoleSelection()}
+          {mode === 'forgot-password' && renderForgotPassword()}
           {(mode === 'login' || mode === 'register') && renderAuthForm()}
         </div>
       </div>

@@ -13,6 +13,8 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (userData: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
+  sendPasswordResetEmail: (email: string) => Promise<void>;
+  updatePassword: (password: string) => Promise<void>;
 }
 
 interface RegisterData {
@@ -37,15 +39,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     let mounted = true;
     let initialized = false;
 
-    // Clear any existing session on page load
-    const clearSession = async () => {
-      try {
-        await supabase.auth.signOut();
-        console.log('Cleared existing session on page load');
-      } catch (error) {
-        console.log('No session to clear or error clearing session:', error);
-      }
-    };
 
     const getInitialSession = async () => {
       if (initialized) return;
@@ -54,15 +47,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       try {
         console.log('Getting initial session...');
         
-        // Always clear session first
-        await clearSession();
+        const { data: { session } } = await supabase.auth.getSession();
         
         if (!mounted) return;
         
-        // After clearing, there should be no session
-        console.log('Session cleared, user must log in');
-        setSession(null);
-        setUser(null);
+        if (session) {
+          setSession(session);
+          await loadProfile(session.user.id);
+        } else {
+          setSession(null);
+          setUser(null);
+        }
       } catch (err) {
         if (!mounted) return;
         console.error('Initial session error:', err);
@@ -179,6 +174,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
 
       if (error) throw error;
+        if (error.message === 'Invalid login credentials') {
+          throw new Error('Invalid email or password. Please check your credentials and try again.');
+        }
       console.log('Login successful');
     } catch (err) {
       console.error('Login failed:', err);
@@ -238,6 +236,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const sendPasswordResetEmail = async (email: string) => {
+    try {
+      console.log('Sending password reset email to:', email);
+      setError(null);
+      
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`
+      });
+
+      if (error) throw error;
+      console.log('Password reset email sent successfully');
+    } catch (err) {
+      console.error('Password reset failed:', err);
+      setError(err instanceof Error ? err.message : 'Failed to send password reset email');
+      throw err;
+    }
+  };
   return (
     <AuthContext.Provider
       value={{
@@ -254,8 +269,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     </AuthContext.Provider>
   );
 };
+      if (error) throw error;
+      console.log('Password updated successfully');
+    } catch (err) {
+      console.error('Password update failed:', err);
+      setError(err instanceof Error ? err.message : 'Failed to update password');
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  const updatePassword = async (password: string) => {
+    try {
+      console.log('Updating password');
+      setIsLoading(true);
+      setError(null);
+      
+      const { error } = await supabase.auth.updateUser({
+        password: password
+      });
 export const useAuth = () => {
+        sendPasswordResetEmail,
+        updatePassword
   const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');

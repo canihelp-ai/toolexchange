@@ -7,16 +7,21 @@ import HomePage from './components/home/HomePage';
 import ToolDetailPage from './components/tool/ToolDetailPage';
 import DashboardLayout from './components/dashboard/DashboardLayout';
 import DashboardHome from './components/dashboard/DashboardHome';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 
 const AppContent: React.FC = () => {
   const { user, isLoading } = useAuth();
-  const [showLanding, setShowLanding] = React.useState(!user);
+  const [showLanding, setShowLanding] = React.useState(false);
+  
+  // Check if we're on the reset password page
+  const isResetPasswordPage = window.location.pathname === '/reset-password';
 
   React.useEffect(() => {
     if (!isLoading) {
-      setShowLanding(!user);
+      // Don't show landing modal on reset password page
+      setShowLanding(!user && !isResetPasswordPage);
     }
-  }, [user]);
+  }, [user, isLoading, isResetPasswordPage]);
 
   if (isLoading) {
     return (
@@ -29,10 +34,17 @@ const AppContent: React.FC = () => {
     );
   }
 
+  // Show reset password page if on that route
+  if (isResetPasswordPage) {
+    return <ResetPasswordPage />;
+  }
+
+  // Show landing modal if user is not authenticated and not on reset password page
   if (!user && showLanding) {
     return <LandingModal onAuthSuccess={() => setShowLanding(false)} />;
   }
 
+  // If user is not authenticated and not showing landing, redirect to home
   if (!user) {
     return <LandingModal onAuthSuccess={() => setShowLanding(false)} />;
   }
@@ -43,6 +55,7 @@ const AppContent: React.FC = () => {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/tool/:id" element={<ToolDetailPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/dashboard" element={
           <DashboardLayout>
             <DashboardHome />
@@ -53,10 +66,6 @@ const AppContent: React.FC = () => {
   );
 };
 
-const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user } = useAuth();
-  return user ? <>{children}</> : <Navigate to="/" />;
-};
 
 function App() {
   return (
