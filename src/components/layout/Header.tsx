@@ -8,13 +8,17 @@ import { useAuth } from '../../context/AuthContext';
 const Header: React.FC = () => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [headerSearchQuery, setHeaderSearchQuery] = useState('');
   const { user, logout } = useAuth();
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleHeaderSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    // Implement search functionality
-    console.log('Searching for:', searchQuery);
+    // Navigate to home page with search query
+    const searchParams = new URLSearchParams();
+    if (headerSearchQuery.trim()) {
+      searchParams.set('search', headerSearchQuery.trim());
+    }
+    window.location.href = `/?${searchParams.toString()}`;
   };
 
   const handleProfileAction = (action: string) => {
@@ -37,14 +41,14 @@ const Header: React.FC = () => {
 
           {/* Search Bar */}
           <div className="flex-1 max-w-2xl mx-8">
-            <form onSubmit={handleSearch} className="relative">
+            <form onSubmit={handleHeaderSearch} className="relative">
               <Input
                 type="text"
                 placeholder="Search tools, equipment, or operators..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                value={headerSearchQuery}
+                onChange={(e) => setHeaderSearchQuery(e.target.value)}
                 leftIcon={<Search size={20} />}
-                className="pr-20"
+                className="pr-20 text-gray-900"
               />
               <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center space-x-2">
                 <Button

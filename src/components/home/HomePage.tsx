@@ -87,6 +87,13 @@ const HomePage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Check for search query in URL params
+    const urlParams = new URLSearchParams(window.location.search);
+    const searchParam = urlParams.get('search');
+    if (searchParam) {
+      setSearchQuery(searchParam);
+    }
+    
     loadTools();
   }, []);
 
@@ -249,7 +256,7 @@ const HomePage: React.FC = () => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   leftIcon={<Search size={20} />}
-                  className="text-lg py-4 pr-32 bg-white"
+                  className="text-lg py-4 pr-32 bg-white text-gray-900 placeholder-gray-500"
                 />
                 <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
                   <Button
