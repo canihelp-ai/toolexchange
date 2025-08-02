@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User as AuthUser, Session } from '@supabase/supabase-js';
-import { supabase, signIn, signUp, signOut } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 import { Database } from '../lib/database.types';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
@@ -9,12 +9,12 @@ interface AuthContextType {
   user: Profile | null;
   authUser: AuthUser | null;
   session: Session | null;
+  isLoading: boolean;
+  error: string | null;
   login: (email: string, password: string) => Promise<void>;
   register: (userData: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
   updateUserProfile: (updates: Partial<Profile>) => Promise<{ success: boolean; error?: string }>;
-  isLoading: boolean;
-  error: string | null;
 }
 
 interface RegisterData {
@@ -48,26 +48,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Handle profile creation/loading
-  const handleProfile = async (userId: string): Promise<Profile | null> => {
+  // Load user profile
+  const loadProfile = async (userId: string): Promise<void> => {
     try {
       console.log('Loading profile for user:', userId);
       
-      // Check if profile exists
-      const { data: existingProfile, error: fetchError } = await supabase
+      // First try to get existing profile
+      const { data: profile, error: fetchError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
 
-      if (!fetchError && existingProfile) {
-        console.log('Profile found:', existingProfile);
-        return existingProfile;
+      // If profile exists, use it
+      if (!fetchError && profile) {
+        console.log('Profile found:', profile);
+        setUser(profile);
+        return;
       }
 
       console.log('Profile not found, creating new profile...');
       
-      // Create new profile if it doesn't exist
+      // If no profile exists, create a new one
       const { data: { user: authData } } = await supabase.auth.getUser();
       
       const newProfile = {
@@ -102,17 +104,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       
       console.log('Profile created successfully:', createdProfile);
-      return createdProfile;
+      setUser(createdProfile);
     } catch (err) {
-      console.error('Profile error:', err);
-      // Don't throw error, return null to allow app to continue
-      return null;
+      console.error('Profile loading error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load profile');
+      throw err;
     }
   };
 
-  // Handle auth state changes
+  // Initialize auth and handle state changes
   useEffect(() => {
     let mounted = true;
+    console.log('Initializing auth context...');
 
     const getInitialSession = async () => {
       try {
@@ -123,22 +126,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           console.error('Session error:', error);
           throw error;
         }
-        
-        if (mounted && session) {
-          console.log('Initial session found:', session.user.id);
+
+        if (!session) {
+          console.log('No initial session found');
+          if (mounted) {
+            setIsLoading(false);
+          }
+          return;
+        }
+
+        console.log('Initial session found:', session.user.id);
+        if (mounted) {
           setSession(session);
           setAuthUser(session.user);
-          const profile = await handleProfile(session.user.id);
-          setUser(profile);
-        } else {
-          console.log('No initial session found');
+          await loadProfile(session.user.id);
+          setIsLoading(false);
         }
-      } catch (err) {
-        console.error('Session initialization error:', err);
-        setError(err instanceof Error ? err.message : 'Session initialization failed');
-      } finally {
+      } catch (error) {
+        console.error('Initial session error:', error);
         if (mounted) {
-          console.log('Setting initial loading to false');
+          setError(error instanceof Error ? error.message : 'Failed to get session');
           setIsLoading(false);
         }
       }
@@ -152,23 +159,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         if (!mounted) return;
 
-        if (session) {
-          setSession(session);
-          setAuthUser(session.user);
-          try {
-            const profile = await handleProfile(session.user.id);
-            setUser(profile);
+        try {
+          if (session) {
+            setSession(session);
+            setAuthUser(session.user);
+            await loadProfile(session.user.id);
             setError(null);
-          } catch (err) {
-            console.error('Profile loading error:', err);
-            setError('Failed to load user profile');
+          } else {
+            setSession(null);
+            setAuthUser(null);
+            setUser(null);
           }
-        } else {
-          setSession(null);
-          setAuthUser(null);
-          setUser(null);
+        } catch (error) {
+          console.error('Auth state change error:', error);
+          setError(error instanceof Error ? error.message : 'Authentication error');
+        } finally {
+          setIsLoading(false);
         }
-        setIsLoading(false);
       }
     );
 
@@ -185,12 +192,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setError(null);
     
     try {
-      const { error } = await signIn(email, password);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
       if (error) {
         console.error('Login error:', error);
         throw error;
       }
+      
+      if (!data.session) {
+        throw new Error('No session returned');
+      }
+      
       console.log('Login successful');
+      setSession(data.session);
+      setAuthUser(data.session.user);
+      await loadProfile(data.session.user.id);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Login failed';
       console.error('Login failed:', message);
@@ -207,19 +226,33 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setError(null);
     
     try {
-      const { error } = await signUp(userData.email, userData.password, {
-        name: userData.name,
-        phone: userData.phone,
-        location: userData.location,
-        role: userData.role,
-        bio: userData.bio
+      const { data, error } = await supabase.auth.signUp({
+        email: userData.email,
+        password: userData.password,
+        options: {
+          data: {
+            name: userData.name,
+            phone: userData.phone,
+            location: userData.location,
+            role: userData.role,
+            bio: userData.bio
+          }
+        }
       });
       
       if (error) {
         console.error('Registration error:', error);
         throw error;
       }
+      
       console.log('Registration successful');
+      
+      // If we get a session immediately (email confirmation disabled)
+      if (data.session) {
+        setSession(data.session);
+        setAuthUser(data.session.user);
+        await loadProfile(data.session.user.id);
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Registration failed';
       console.error('Registration failed:', message);
@@ -236,7 +269,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setError(null);
     
     try {
-      const { error } = await signOut();
+      const { error } = await supabase.auth.signOut();
       if (error) throw error;
       
       setUser(null);

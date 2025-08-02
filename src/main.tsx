@@ -3,11 +3,16 @@ import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 
-// Service Worker Registration for Development
-if ('serviceWorker' in navigator && import.meta.env.DEV) {
+// Service Worker Registration - Only in production
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {
-    // Only register service worker in production or if explicitly needed
-    console.log('Service worker available but not registering in development');
+    navigator.serviceWorker.register('/service-worker.js')
+      .then(registration => {
+        console.log('SW registered:', registration);
+      })
+      .catch(registrationError => {
+        console.log('SW registration failed:', registrationError);
+      });
   });
 }
 

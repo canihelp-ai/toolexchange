@@ -5,77 +5,12 @@ import Input from '../ui/Input';
 import ToolCard from './ToolCard';
 import FilterModal from './FilterModal';
 import { FilterOptions, Tool } from '../../types';
-import { supabase } from '../../lib/supabase';
-
-// Transform database tool to our Tool type
-const transformTool = (dbTool: any): Tool => ({
-  id: dbTool.id,
-  ownerId: dbTool.owner_id,
-  owner: {
-    id: dbTool.owner.id,
-    email: dbTool.owner.email,
-    name: dbTool.owner.name,
-    phone: dbTool.owner.phone,
-    avatar: dbTool.owner.avatar_url || 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1',
-    location: dbTool.owner.location,
-    bio: dbTool.owner.bio,
-    role: dbTool.owner.role,
-    verified: {
-      email: dbTool.owner.email_verified,
-      phone: dbTool.owner.phone_verified,
-      id: dbTool.owner.id_verified,
-    },
-    rating: dbTool.owner.rating,
-    reviewCount: dbTool.owner.review_count,
-    memberSince: dbTool.owner.member_since,
-    trustScore: dbTool.owner.trust_score,
-  },
-  title: dbTool.title,
-  description: dbTool.description,
-  category: dbTool.category,
-  brand: dbTool.brand,
-  model: dbTool.model,
-  images: dbTool.tool_images?.map((img: any) => img.image_url) || ['https://images.pexels.com/photos/209274/pexels-photo-209274.jpeg?auto=compress&cs=tinysrgb&w=800&h=600&dpr=1'],
-  location: dbTool.location,
-  condition: dbTool.condition,
-  specifications: dbTool.specifications || {},
-  pricing: {
-    type: dbTool.pricing_type,
-    hourly: dbTool.hourly_rate,
-    daily: dbTool.daily_rate,
-    weekly: dbTool.weekly_rate,
-    currentBid: dbTool.current_bid,
-    suggestedBid: dbTool.suggested_bid,
-  },
-  availability: {
-    startDate: dbTool.tool_availability?.[0]?.start_date || '',
-    endDate: dbTool.tool_availability?.[0]?.end_date || '',
-    blockedDates: dbTool.tool_availability?.[0]?.blocked_dates || [],
-  },
-  operatorSupport: {
-    available: dbTool.operator_available,
-    required: dbTool.operator_required,
-    rate: dbTool.operator_rate,
-  },
-  insurance: {
-    available: dbTool.insurance_available,
-    basicCoverage: dbTool.basic_coverage,
-    premiumCoverage: dbTool.premium_coverage,
-  },
-  rating: dbTool.rating,
-  reviewCount: dbTool.review_count,
-  features: dbTool.features || [],
-  rules: dbTool.rules || [],
-  deposit: dbTool.deposit,
-  createdAt: dbTool.created_at,
-  updatedAt: dbTool.updated_at,
-  status: dbTool.status,
-  views: dbTool.views,
-  favorites: dbTool.favorites,
-});
+import { useTools } from '../../hooks/useTools';
+import { useAuth } from '../../context/AuthContext';
 
 const HomePage: React.FC = () => {
-  const [tools, setTools] = useState<Tool[]>([]);
+  const { tools, isLoading: toolsLoading, error: toolsError } = useTools();
+  const { session } = useAuth();
   const [filteredTools, setFilteredTools] = useState<Tool[]>([]);
   const [filters, setFilters] = useState<FilterOptions>({});
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
@@ -83,8 +18,6 @@ const HomePage: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState('relevance');
   const [favorites, setFavorites] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     // Check for search query in URL params
@@ -94,49 +27,11 @@ const HomePage: React.FC = () => {
       setSearchQuery(searchParam);
     }
     
-    loadTools();
   }, []);
 
   useEffect(() => {
     applyFiltersAndSearch();
   }, [tools, filters, searchQuery, sortBy]);
-
-  const loadTools = async () => {
-    console.log('Loading tools from database...');
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      const { data, error } = await supabase
-        .from('tools')
-        .select(`
-          *,
-          owner:profiles!tools_owner_id_fkey(*),
-          tool_images(*),
-          tool_availability(*),
-          operator:profiles!tools_operator_id_fkey(*)
-        `)
-        .eq('status', 'active')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error loading tools:', error);
-        setError(`Failed to load tools: ${error.message}`);
-      } else if (data) {
-        console.log(`Successfully loaded ${data.length} tools from database`);
-        const transformedTools = data.map(transformTool);
-        setTools(transformedTools);
-      } else {
-        console.log('No tools found in database');
-        setTools([]);
-      }
-    } catch (error) {
-      console.error('Error loading tools:', error);
-      setError(`Failed to load tools: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const applyFiltersAndSearch = () => {
     console.log('Applying filters to tools:', tools.length);
@@ -315,13 +210,13 @@ const HomePage: React.FC = () => {
         </div>
 
         {/* Error State */}
-        {error && (
+        {toolsError && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-            <p className="text-red-600">{error}</p>
+            <p className="text-red-600">{toolsError}</p>
             <Button
               variant="outline"
               size="sm"
-              onClick={loadTools}
+              onClick={() => window.location.reload()}
               className="mt-2"
             >
               Try Again
@@ -330,7 +225,7 @@ const HomePage: React.FC = () => {
         )}
 
         {/* Tools Grid */}
-        {isLoading ? (
+        {toolsLoading ? (
           <div className="flex justify-center items-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
           </div>
@@ -352,7 +247,7 @@ const HomePage: React.FC = () => {
         )}
 
         {/* Empty State */}
-        {!isLoading && filteredTools.length === 0 && (
+        {!toolsLoading && filteredTools.length === 0 && !toolsError && (
           <div className="text-center py-12">
             <div className="text-gray-400 mb-4">
               <Search size={64} className="mx-auto" />
@@ -361,7 +256,7 @@ const HomePage: React.FC = () => {
               No tools found
             </h3>
             <p className="text-gray-500 mb-4">
-              Try adjusting your search or filters to find more tools.
+              {!session ? 'Please sign in to view available tools.' : 'Try adjusting your search or filters to find more tools.'}
             </p>
             <Button
               variant="outline"
