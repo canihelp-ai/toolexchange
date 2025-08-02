@@ -74,7 +74,7 @@ export const useTools = () => {
   const [tools, setTools] = useState<Tool[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { session, isLoading: authLoading } = useAuth();
+  const { session } = useAuth();
   const mounted = useRef(true);
 
   const loadTools = async () => {
@@ -82,6 +82,13 @@ export const useTools = () => {
       console.log('Loading tools from database...');
       setIsLoading(true);
       setError(null);
+      
+      // Only load tools if we have a session
+      if (!session) {
+        setTools([]);
+        setIsLoading(false);
+        return;
+      }
       
       const { data, error } = await supabase
         .from('tools')
@@ -110,23 +117,13 @@ export const useTools = () => {
   };
 
   useEffect(() => {
-    // Load tools regardless of authentication status (tools should be publicly viewable)
     mounted.current = true;
-    // Only load tools if user is authenticated
-    if (session && !authLoading) {
-      console.log('User authenticated, loading tools...');
-      loadTools();
-    } else if (!authLoading) {
-      console.log('User not authenticated, not loading tools');
-      setIsLoading(false);
-      setTools([]);
-    }
     loadTools();
 
     return () => {
       mounted.current = false;
     };
-  }, [session, authLoading]);
+  }, [session]);
 
   const refetch = () => {
     setIsLoading(true);

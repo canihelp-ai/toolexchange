@@ -1,6 +1,6 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User as AuthUser, Session } from '@supabase/supabase-js';
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
+import { Session, User } from '@supabase/supabase-js';
 import { Database } from '../lib/database.types';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
@@ -30,72 +30,89 @@ interface RegisterData {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<Profile | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [state, setState] = useState<{
+    user: Profile | null;
+    session: Session | null;
+    isLoading: boolean;
+    error: string | null;
+  }>({
+    user: null,
+    session: null,
+    isLoading: true,
+    error: null,
+  });
 
   useEffect(() => {
     console.log('Setting up auth state listener...');
     
-    // Get initial session
-    const getInitialSession = async () => {
+    let mounted = true;
+    let authListener: { data: { subscription: { unsubscribe: () => void } } } | null = null;
+
+    const initializeAuth = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) throw error;
         
-        if (session) {
-          console.log('Initial session found for user:', session.user.id);
-          setSession(session);
-          await loadProfile(session.user.id);
-        } else {
-          console.log('No initial session found');
-          setSession(null);
-          setUser(null);
+        if (!mounted) return;
+
+        if (error) throw error;
+
+        let profile = null;
+        if (session?.user) {
+          profile = await loadProfile(session.user.id);
         }
-      } catch (err) {
-        console.error('Initial session error:', err);
-        setError(err instanceof Error ? err.message : 'Failed to get session');
-      } finally {
-        setIsLoading(false);
+
+        setState({
+          user: profile,
+          session: session,
+          isLoading: false,
+          error: null,
+        });
+
+        // Set up auth state change listener
+        authListener = supabase.auth.onAuthStateChange(async (event, session) => {
+          console.log(`Auth state change: ${event}`, session?.user?.id);
+          if (!mounted) return;
+          
+          let profile = null;
+          if (session?.user) {
+            try {
+              profile = await loadProfile(session.user.id);
+            } catch (err) {
+              console.error('Failed to load profile:', err);
+            }
+          }
+          
+          setState({
+            user: profile,
+            session: session,
+            isLoading: false,
+            error: null,
+          });
+        });
+      } catch (error) {
+        if (!mounted) return;
+        console.error('Auth initialization error:', error);
+        setState({
+          user: null,
+          session: null,
+          isLoading: false,
+          error: error instanceof Error ? error.message : 'Auth initialization failed',
+        });
       }
     };
 
-    // Set up auth state change listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('Auth state change:', event, session?.user?.id);
-        
-        try {
-          setError(null);
-          
-          if (session) {
-            setSession(session);
-            await loadProfile(session.user.id);
-          } else {
-            setSession(null);
-            setUser(null);
-          }
-        } catch (err) {
-          console.error('Auth state change error:', err);
-          setError(err instanceof Error ? err.message : 'Auth state change failed');
-        } finally {
-          setIsLoading(false);
-        }
-      }
-    );
+    initializeAuth();
 
-    // Get initial session
-    getInitialSession();
-
-    // Cleanup subscription on unmount
     return () => {
       console.log('Cleaning up auth subscription');
-      subscription.unsubscribe();
+      mounted = false;
+      if (authListener) {
+        authListener.data.subscription.unsubscribe();
+      }
     };
   }, []);
 
-  const loadProfile = async (userId: string) => {
+  const loadProfile = async (userId: string): Promise<Profile | null> => {
     try {
       console.log('Loading profile for user:', userId);
       
@@ -106,11 +123,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .eq('id', userId)
         .single();
 
-      // If profile exists, use it
+      // If profile exists, return it
       if (!fetchError && profile) {
         console.log('Profile loaded successfully:', profile.name);
-        setUser(profile);
-        return;
+        return profile;
       }
 
       console.log('Profile not found, creating new profile...');
@@ -147,10 +163,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (createError) throw createError;
       console.log('Profile created successfully:', createdProfile.name);
-      setUser(createdProfile);
+      return createdProfile;
     } catch (err) {
       console.error('Profile loading error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load profile');
       throw err;
     }
   };
@@ -158,8 +173,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (email: string, password: string) => {
     try {
       console.log('Attempting login for:', email);
-      setIsLoading(true);
-      setError(null);
+      setState(prev => ({ ...prev, error: null }));
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -176,8 +190,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.log('Login successful for user:', data.user.id);
     } catch (err) {
       console.error('Login failed:', err);
-      setError(err instanceof Error ? err.message : 'Login failed');
-      setIsLoading(false);
+      const errorMessage = err instanceof Error ? err.message : 'Login failed';
+      setState(prev => ({ ...prev, error: errorMessage }));
       throw err;
     }
   };
@@ -185,8 +199,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const register = async (userData: RegisterData) => {
     try {
       console.log('Attempting registration for:', userData.email);
-      setIsLoading(true);
-      setError(null);
+      setState(prev => ({ ...prev, error: null }));
       
       const { data, error } = await supabase.auth.signUp({
         email: userData.email,
@@ -206,8 +219,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.log('Registration successful for user:', data.user?.id);
     } catch (err) {
       console.error('Registration failed:', err);
-      setError(err instanceof Error ? err.message : 'Registration failed');
-      setIsLoading(false);
+      const errorMessage = err instanceof Error ? err.message : 'Registration failed';
+      setState(prev => ({ ...prev, error: errorMessage }));
       throw err;
     }
   };
@@ -215,26 +228,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = async () => {
     try {
       console.log('Logging out user');
-      setIsLoading(true);
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       
-      setSession(null);
-      setUser(null);
-      setError(null);
+      setState({
+        user: null,
+        session: null,
+        isLoading: false,
+        error: null,
+      });
       console.log('Logout successful');
     } catch (err) {
       console.error('Logout failed:', err);
-      setError(err instanceof Error ? err.message : 'Logout failed');
-    } finally {
-      setIsLoading(false);
+      const errorMessage = err instanceof Error ? err.message : 'Logout failed';
+      setState(prev => ({ ...prev, error: errorMessage }));
     }
   };
 
   const sendPasswordResetEmail = async (email: string) => {
     try {
       console.log('Sending password reset email to:', email);
-      setError(null);
+      setState(prev => ({ ...prev, error: null }));
       
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/reset-password`
@@ -244,7 +258,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.log('Password reset email sent successfully');
     } catch (err) {
       console.error('Password reset failed:', err);
-      setError(err instanceof Error ? err.message : 'Failed to send password reset email');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to send password reset email';
+      setState(prev => ({ ...prev, error: errorMessage }));
       throw err;
     }
   };
@@ -252,8 +267,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const updatePassword = async (password: string) => {
     try {
       console.log('Updating password');
-      setIsLoading(true);
-      setError(null);
+      setState(prev => ({ ...prev, error: null }));
       
       const { error } = await supabase.auth.updateUser({
         password: password
@@ -263,27 +277,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.log('Password updated successfully');
     } catch (err) {
       console.error('Password update failed:', err);
-      setError(err instanceof Error ? err.message : 'Failed to update password');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update password';
+      setState(prev => ({ ...prev, error: errorMessage }));
       throw err;
-    } finally {
-      setIsLoading(false);
     }
   };
 
+  const value: AuthContextType = {
+    user: state.user,
+    session: state.session,
+    isLoading: state.isLoading,
+    error: state.error,
+    login,
+    register,
+    logout,
+    sendPasswordResetEmail,
+    updatePassword,
+  };
+
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        session,
-        isLoading,
-        error,
-        login,
-        register,
-        logout,
-        sendPasswordResetEmail,
-        updatePassword
-      }}
-    >
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
