@@ -20,7 +20,8 @@ import {
   Mail,
   MessageCircle,
   DollarSign,
-  Info
+  Info,
+  TrendingUp
 } from 'lucide-react';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
@@ -31,15 +32,20 @@ import Input from '../ui/Input';
 import { Tool } from '../../types';
 import { formatCurrency, formatDate } from '../../utils/format';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../context/AuthContext';
 
 const ToolDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [tool, setTool] = useState<Tool | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [isRentModalOpen, setIsRentModalOpen] = useState(false);
+  const [isBidModalOpen, setIsBidModalOpen] = useState(false);
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const [isFavorited, setIsFavorited] = useState(false);
   
   // Rental form state
@@ -49,6 +55,17 @@ const ToolDetailPage: React.FC = () => {
   const [includeInsurance, setIncludeInsurance] = useState(false);
   const [insuranceType, setInsuranceType] = useState<'basic' | 'premium'>('basic');
   const [bidAmount, setBidAmount] = useState('');
+
+  // Bidding state
+  const [bidError, setBidError] = useState('');
+  const [isSubmittingBid, setIsSubmittingBid] = useState(false);
+  const [bidSuccess, setBidSuccess] = useState(false);
+
+  // Contact state
+  const [contactMessage, setContactMessage] = useState('');
+  const [contactSubject, setContactSubject] = useState('');
+  const [isOwnerOnline] = useState(Math.random() > 0.5); // Simulate online status
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -184,7 +201,154 @@ const ToolDetailPage: React.FC = () => {
     return total + platformFee + tax;
   };
 
+  const validateBid = (amount: number): string | null => {
+    if (!tool) return 'Tool not found';
+    if (amount <= 0) return 'Bid amount must be greater than 0';
+    if (tool.pricing.suggestedBid && amount < tool.pricing.suggestedBid) {
+      return `Bid must be at least ${formatCurrency(tool.pricing.suggestedBid)} (reserve price)`;
+    }
+    if (tool.pricing.currentBid && amount <= tool.pricing.currentBid) {
+      return `Bid must be higher than current bid of ${formatCurrency(tool.pricing.currentBid)}`;
+    }
+    return null;
+  };
+
+  const handlePlaceBid = async () => {
+    if (!user) {
+      alert('Please sign in to place a bid');
+      return;
+    }
+
+    const amount = parseFloat(bidAmount);
+    const validationError = validateBid(amount);
+    
+    if (validationError) {
+      setBidError(validationError);
+      return;
+    }
+
+    setIsSubmittingBid(true);
+    setBidError('');
+
+    try {
+      // Calculate bid expiration (24 hours from now)
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 24);
+
+      const { error } = await supabase
+        .from('bids')
+        .insert([{
+          tool_id: tool?.id,
+          bidder_id: user.id,
+          amount: amount,
+          expires_at: expiresAt.toISOString(),
+          status: 'active'
+        }]);
+
+      if (error) {
+        setBidError('Failed to place bid. Please try again.');
+        console.error('Bid error:', error);
+      } else {
+        setIsBidModalOpen(false);
+        setBidAmount('');
+        // Show success message or update UI
+        alert(`Bid of ${formatCurrency(amount)} placed successfully! Valid for 24 hours.`);
+        // Refresh tool data to show new current bid
+        if (id) loadTool(id);
+      }
+    } catch (error) {
+      setBidError('An error occurred. Please try again.');
+      console.error('Bid error:', error);
+    } finally {
+      setIsSubmittingBid(false);
+    }
+  };
+
+  const handleContactOwner = () => {
+    if (!user) {
+      alert('Please sign in to contact the owner');
+      return;
+    }
+    
+    if (isOwnerOnline) {
+      setIsChatOpen(true);
+    } else {
+      setIsContactModalOpen(true);
+    }
+  };
+
+  const handleSendMessage = async () => {
+    if (!contactMessage.trim() || !contactSubject.trim()) {
+      alert('Please fill in both subject and message');
+      return;
+    }
+
+    setIsSendingMessage(true);
+
+    try {
+      // Create or find existing chat
+      const { data: existingChat } = await supabase
+        .from('chats')
+        .select('id')
+        .contains('participants', [user?.id, tool?.ownerId])
+        .single();
+
+      let chatId = existingChat?.id;
+
+      if (!chatId) {
+        // Create new chat
+        const { data: newChat, error: chatError } = await supabase
+          .from('chats')
+          .insert([{
+            participants: [user?.id, tool?.ownerId]
+          }])
+          .select('id')
+          .single();
+
+        if (chatError) throw chatError;
+        chatId = newChat.id;
+      }
+
+      // Send message
+      const { error: messageError } = await supabase
+        .from('messages')
+        .insert([{
+          chat_id: chatId,
+          sender_id: user?.id,
+          content: `Subject: ${contactSubject}\n\n${contactMessage}`,
+          type: 'text'
+        }]);
+
+      if (messageError) throw messageError;
+
+      // Create notification for owner
+      await supabase
+        .from('notifications')
+        .insert([{
+          user_id: tool?.ownerId,
+          type: 'message',
+          title: 'New Message',
+          message: `${user?.name} sent you a message about ${tool?.title}`,
+          action_url: `/dashboard/messages`
+        }]);
+
+      setIsContactModalOpen(false);
+      setContactMessage('');
+      setContactSubject('');
+      alert('Message sent successfully! The owner will be notified.');
+    } catch (error) {
+      console.error('Message error:', error);
+      alert('Failed to send message. Please try again.');
+    } finally {
+      setIsSendingMessage(false);
+    }
+  };
+
   const handleRent = () => {
+    if (!user) {
+      alert('Please sign in to rent this tool');
+      return;
+    }
     // Here you would typically create a booking
     console.log('Creating booking:', {
       toolId: tool?.id,
@@ -198,13 +362,6 @@ const ToolDetailPage: React.FC = () => {
     });
     setIsRentModalOpen(false);
     // Navigate to booking confirmation or payment page
-  };
-
-  const handleBid = () => {
-    if (bidAmount && parseFloat(bidAmount) > 0 && tool) {
-      console.log('Placing bid:', tool.id, parseFloat(bidAmount));
-      // Here you would create a bid
-    }
   };
 
   const nextImage = () => {
@@ -537,31 +694,28 @@ const ToolDetailPage: React.FC = () => {
                       Rent This Tool
                     </Button>
                   ) : (
-                    <div className="space-y-3">
-                      <Input
-                        type="number"
-                        placeholder="Enter bid amount"
-                        value={bidAmount}
-                        onChange={(e) => setBidAmount(e.target.value)}
-                        leftIcon={<DollarSign size={16} />}
-                      />
-                      <Button
-                        onClick={handleBid}
-                        className="w-full"
-                        size="lg"
-                        disabled={!bidAmount || parseFloat(bidAmount) <= 0}
-                      >
-                        Place Bid
-                      </Button>
-                    </div>
+                    <Button
+                      onClick={() => setIsBidModalOpen(true)}
+                      className="w-full"
+                      size="lg"
+                    >
+                      <TrendingUp size={18} className="mr-2" />
+                      Place Bid
+                    </Button>
                   )}
                   
                   <Button
                     variant="outline"
                     className="w-full"
+                    onClick={handleContactOwner}
                     leftIcon={<MessageCircle size={16} />}
                   >
                     Contact Owner
+                    {isOwnerOnline && (
+                      <Badge variant="success" size="sm" className="ml-2">
+                        Online
+                      </Badge>
+                    )}
                   </Button>
                 </div>
 
@@ -738,6 +892,200 @@ const ToolDetailPage: React.FC = () => {
             >
               Confirm Rental
             </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Bidding Modal */}
+      <Modal
+        isOpen={isBidModalOpen}
+        onClose={() => {
+          setIsBidModalOpen(false);
+          setBidError('');
+          setBidAmount('');
+        }}
+        title="Place Your Bid"
+        size="md"
+      >
+        <div className="space-y-6">
+          <div className="text-center">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">{tool?.title}</h3>
+            <div className="flex justify-between text-sm text-gray-600">
+              <span>Current Bid: {formatCurrency(tool?.pricing.currentBid || 0)}</span>
+              <span>Reserve: {formatCurrency(tool?.pricing.suggestedBid || 0)}</span>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Your Bid Amount
+            </label>
+            <Input
+              type="number"
+              placeholder="Enter bid amount"
+              value={bidAmount}
+              onChange={(e) => {
+                setBidAmount(e.target.value);
+                setBidError('');
+              }}
+              leftIcon={<DollarSign size={16} />}
+              error={bidError}
+            />
+          </div>
+
+          <div className="bg-blue-50 p-4 rounded-lg">
+            <h4 className="font-medium text-blue-900 mb-2">Bid Information</h4>
+            <ul className="text-sm text-blue-800 space-y-1">
+              <li>• Bid valid for 24 hours</li>
+              <li>• You'll be notified if outbid</li>
+              <li>• Winning bid is binding</li>
+              <li>• Payment required within 24 hours if you win</li>
+            </ul>
+          </div>
+
+          <div className="flex space-x-4">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsBidModalOpen(false);
+                setBidError('');
+                setBidAmount('');
+              }}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handlePlaceBid}
+              className="flex-1"
+              isLoading={isSubmittingBid}
+              disabled={!bidAmount || parseFloat(bidAmount) <= 0}
+            >
+              Place Bid
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Contact Owner Modal (Offline) */}
+      <Modal
+        isOpen={isContactModalOpen}
+        onClose={() => {
+          setIsContactModalOpen(false);
+          setContactMessage('');
+          setContactSubject('');
+        }}
+        title="Contact Tool Owner"
+        size="md"
+      >
+        <div className="space-y-6">
+          <div className="flex items-center space-x-3">
+            <img
+              src={tool?.owner.avatar}
+              alt={tool?.owner.name}
+              className="w-12 h-12 rounded-full object-cover"
+            />
+            <div>
+              <h3 className="font-medium text-gray-900">{tool?.owner.name}</h3>
+              <p className="text-sm text-gray-600">
+                <span className="inline-block w-2 h-2 bg-gray-400 rounded-full mr-2"></span>
+                Currently offline
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Subject
+            </label>
+            <Input
+              type="text"
+              placeholder={`Inquiry about ${tool?.title}`}
+              value={contactSubject}
+              onChange={(e) => setContactSubject(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Message
+            </label>
+            <textarea
+              rows={4}
+              placeholder="Hi! I'm interested in renting your tool. When would it be available?"
+              value={contactMessage}
+              onChange={(e) => setContactMessage(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+            />
+          </div>
+
+          <div className="bg-yellow-50 p-3 rounded-lg">
+            <p className="text-sm text-yellow-800">
+              <Info size={16} className="inline mr-1" />
+              The owner will be notified via email and can respond when they're back online.
+            </p>
+          </div>
+
+          <div className="flex space-x-4">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsContactModalOpen(false);
+                setContactMessage('');
+                setContactSubject('');
+              }}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSendMessage}
+              className="flex-1"
+              isLoading={isSendingMessage}
+              disabled={!contactMessage.trim() || !contactSubject.trim()}
+            >
+              Send Message
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Live Chat Modal (Online) */}
+      <Modal
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+        title="Chat with Owner"
+        size="md"
+      >
+        <div className="space-y-4">
+          <div className="flex items-center space-x-3 pb-3 border-b">
+            <img
+              src={tool?.owner.avatar}
+              alt={tool?.owner.name}
+              className="w-10 h-10 rounded-full object-cover"
+            />
+            <div>
+              <h3 className="font-medium text-gray-900">{tool?.owner.name}</h3>
+              <p className="text-sm text-green-600">
+                <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                Online now
+              </p>
+            </div>
+          </div>
+
+          <div className="h-64 bg-gray-50 rounded-lg p-4 overflow-y-auto">
+            <div className="text-center text-gray-500 text-sm">
+              Start a conversation about {tool?.title}
+            </div>
+          </div>
+
+          <div className="flex space-x-2">
+            <Input
+              type="text"
+              placeholder="Type your message..."
+              className="flex-1"
+            />
+            <Button>Send</Button>
           </div>
         </div>
       </Modal>
