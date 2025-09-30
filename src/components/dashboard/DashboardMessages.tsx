@@ -91,7 +91,7 @@ const DashboardMessages: React.FC = () => {
           .from('profiles')
           .select('*')
           .eq('id', otherUserId)
-          .single();
+          .maybeSingle();
 
         if (!otherUserProfile) continue;
 
