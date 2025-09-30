@@ -322,7 +322,7 @@ const DashboardMessages: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-200px)]">
         <div className="lg:col-span-1">
-          <Card padding="none" className="h-full flex flex-col">
+          <Card padding="none" className="h-full flex flex-col shadow-2xl border-0">
             <div className="p-4 border-b border-gray-200">
               <Input
                 type="text"
@@ -330,6 +330,7 @@ const DashboardMessages: React.FC = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 leftIcon={<Search size={20} />}
+                className="bg-white/80 backdrop-blur-sm border-white/30"
               />
             </div>
             
@@ -349,8 +350,8 @@ const DashboardMessages: React.FC = () => {
                         setSelectedChat(chat);
                         loadMessages(chat.id);
                       }}
-                      className={`w-full p-3 rounded-lg text-left hover:bg-gray-50 transition-colors ${
-                        selectedChat?.id === chat.id ? 'bg-blue-50 border border-blue-200' : ''
+                      className={`w-full p-3 rounded-xl text-left hover:bg-white/30 transition-all duration-300 ${
+                        selectedChat?.id === chat.id ? 'bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-200/50 shadow-lg' : ''
                       }`}
                     >
                       <div className="flex items-center space-x-3">
@@ -358,10 +359,10 @@ const DashboardMessages: React.FC = () => {
                           <img
                             src={chat.otherUser.avatar_url}
                             alt={chat.otherUser.name}
-                            className="w-12 h-12 rounded-full object-cover"
+                            className="w-12 h-12 rounded-full object-cover ring-2 ring-purple-200/50 shadow-lg"
                           />
                           {chat.otherUser.online && (
-                            <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                            <div className="absolute bottom-0 right-0 w-3 h-3 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full border-2 border-white shadow-lg animate-pulse-glow"></div>
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -378,7 +379,7 @@ const DashboardMessages: React.FC = () => {
                           </p>
                         </div>
                         {chat.unreadCount > 0 && (
-                          <Badge variant="error" size="sm">
+                          <Badge variant="error" size="sm" className="shadow-lg animate-pulse-glow">
                             {chat.unreadCount}
                           </Badge>
                         )}
@@ -393,34 +394,38 @@ const DashboardMessages: React.FC = () => {
 
         <div className="lg:col-span-2">
           {selectedChat ? (
-            <Card padding="none" className="h-full flex flex-col">
-              <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+            <Card padding="none" className="h-full flex flex-col shadow-2xl border-0">
+              <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-purple-50 to-pink-50">
                 <div className="flex items-center space-x-3">
                   <div className="relative">
                     <img
                       src={selectedChat.otherUser.avatar_url}
                       alt={selectedChat.otherUser.name}
-                      className="w-10 h-10 rounded-full object-cover"
+                      className="w-10 h-10 rounded-full object-cover ring-2 ring-purple-200/50 shadow-lg"
                     />
                     {selectedChat.otherUser.online && (
-                      <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                      <div className="absolute bottom-0 right-0 w-3 h-3 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full border-2 border-white shadow-lg animate-pulse-glow"></div>
                     )}
                   </div>
                   <div>
                     <h3 className="font-medium text-gray-900">{selectedChat.otherUser.name}</h3>
                     <p className="text-sm text-gray-500">
-                      {selectedChat.otherUser.online ? 'Online' : 'Offline'}
+                      {selectedChat.otherUser.online ? (
+                        <span className="text-green-600 font-medium">● Online</span>
+                      ) : (
+                        <span className="text-gray-500">○ Offline</span>
+                      )}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Button variant="ghost" size="sm">
+                  <Button variant="ghost" size="sm" className="hover:bg-white/30 rounded-full">
                     <Phone size={16} />
                   </Button>
-                  <Button variant="ghost" size="sm">
+                  <Button variant="ghost" size="sm" className="hover:bg-white/30 rounded-full">
                     <Video size={16} />
                   </Button>
-                  <Button variant="ghost" size="sm">
+                  <Button variant="ghost" size="sm" className="hover:bg-white/30 rounded-full">
                     <MoreVertical size={16} />
                   </Button>
                 </div>
@@ -445,8 +450,8 @@ const DashboardMessages: React.FC = () => {
                       />
                       <div className={`px-4 py-2 rounded-lg ${
                         message.sender_id === user?.id
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-100 text-gray-900'
+                          ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg'
+                          : 'bg-white/80 backdrop-blur-sm text-gray-900 shadow-lg border border-white/30'
                       }`}>
                         <p className="text-sm">{message.content}</p>
                         <p className={`text-xs mt-1 ${
@@ -462,7 +467,7 @@ const DashboardMessages: React.FC = () => {
 
               <div className="p-4 border-t border-gray-200">
                 <div className="flex items-center space-x-2">
-                  <Button variant="ghost" size="sm">
+                  <Button variant="ghost" size="sm" className="hover:bg-white/30 rounded-full">
                     <Paperclip size={16} />
                   </Button>
                   <Input
@@ -471,12 +476,13 @@ const DashboardMessages: React.FC = () => {
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                    className="flex-1"
+                    className="flex-1 bg-white/80 backdrop-blur-sm border-white/30"
                   />
                   <Button
                     onClick={sendMessage}
                     disabled={!newMessage.trim() || isSending}
                     isLoading={isSending}
+                    className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 border-0 shadow-lg rounded-full"
                   >
                     <Send size={16} />
                   </Button>
@@ -484,7 +490,7 @@ const DashboardMessages: React.FC = () => {
               </div>
             </Card>
           ) : (
-            <Card className="h-full flex items-center justify-center">
+            <Card className="h-full flex items-center justify-center shadow-2xl border-0 bg-gradient-to-br from-purple-50 to-pink-50">
               <div className="text-center text-gray-500">
                 <MessageCircle size={64} className="mx-auto mb-4 text-gray-300" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No conversation selected</h3>

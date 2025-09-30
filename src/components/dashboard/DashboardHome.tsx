@@ -139,10 +139,10 @@ const DashboardHome: React.FC = () => {
     <div className="space-y-8">
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="p-6">
+        <Card className="p-6 card-hover bg-gradient-to-br from-blue-50 to-indigo-100 border-0 shadow-xl">
           <div className="flex items-center">
-            <div className="p-3 bg-blue-100 rounded-lg">
-              <Package className="w-6 h-6 text-blue-600" />
+            <div className="p-3 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl shadow-lg">
+              <Package className="w-6 h-6 text-white" />
             </div>
             <div className="ml-4">
               <p className="text-2xl font-bold text-gray-900">{dashboardData.stats.activeRentals}</p>
@@ -151,10 +151,10 @@ const DashboardHome: React.FC = () => {
           </div>
         </Card>
         
-        <Card className="p-6">
+        <Card className="p-6 card-hover bg-gradient-to-br from-green-50 to-emerald-100 border-0 shadow-xl">
           <div className="flex items-center">
-            <div className="p-3 bg-green-100 rounded-lg">
-              <TrendingUp className="w-6 h-6 text-green-600" />
+            <div className="p-3 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl shadow-lg">
+              <TrendingUp className="w-6 h-6 text-white" />
             </div>
             <div className="ml-4">
               <p className="text-2xl font-bold text-gray-900">{dashboardData.stats.activeBids}</p>
@@ -163,10 +163,10 @@ const DashboardHome: React.FC = () => {
           </div>
         </Card>
         
-        <Card className="p-6">
+        <Card className="p-6 card-hover bg-gradient-to-br from-yellow-50 to-orange-100 border-0 shadow-xl">
           <div className="flex items-center">
-            <div className="p-3 bg-yellow-100 rounded-lg">
-              <DollarSign className="w-6 h-6 text-yellow-600" />
+            <div className="p-3 bg-gradient-to-r from-yellow-500 to-orange-600 rounded-xl shadow-lg">
+              <DollarSign className="w-6 h-6 text-white" />
             </div>
             <div className="ml-4">
               <p className="text-2xl font-bold text-gray-900">{formatCurrency(dashboardData.stats.monthlyEarnings)}</p>
@@ -175,10 +175,10 @@ const DashboardHome: React.FC = () => {
           </div>
         </Card>
         
-        <Card className="p-6">
+        <Card className="p-6 card-hover bg-gradient-to-br from-purple-50 to-pink-100 border-0 shadow-xl">
           <div className="flex items-center">
-            <div className="p-3 bg-purple-100 rounded-lg">
-              <Star className="w-6 h-6 text-purple-600" />
+            <div className="p-3 bg-gradient-to-r from-purple-500 to-pink-600 rounded-xl shadow-lg">
+              <Star className="w-6 h-6 text-white" />
             </div>
             <div className="ml-4">
               <p className="text-2xl font-bold text-gray-900">{user?.rating?.toFixed(1) || '0.0'}</p>
@@ -190,9 +190,9 @@ const DashboardHome: React.FC = () => {
 
       {/* Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <Card>
+        <Card className="card-hover shadow-xl border-0">
           <div className="p-6">
-            <h3 className="text-lg font-semibold mb-4">Recent Rentals</h3>
+            <h3 className="text-lg font-semibold mb-4 gradient-text">Recent Rentals</h3>
             {dashboardData.bookings.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <Package size={32} className="mx-auto mb-2 text-gray-300" />
@@ -205,7 +205,7 @@ const DashboardHome: React.FC = () => {
                     <img
                       src={booking.tool?.tool_images?.[0]?.image_url || 'https://images.pexels.com/photos/209274/pexels-photo-209274.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=1'}
                       alt="Tool"
-                      className="w-12 h-12 rounded-lg object-cover"
+                      className="w-12 h-12 rounded-xl object-cover shadow-lg ring-2 ring-purple-200/50"
                     />
                     <div className="flex-1">
                       <p className="font-medium text-gray-900">{booking.tool?.title || 'Unknown Tool'}</p>
@@ -213,7 +213,7 @@ const DashboardHome: React.FC = () => {
                         {formatRelativeTime(booking.created_at)} • {formatCurrency(booking.total)}
                       </p>
                     </div>
-                    <Badge variant={booking.status === 'completed' ? 'success' : booking.status === 'active' ? 'info' : 'warning'} className="capitalize">
+                    <Badge variant={booking.status === 'completed' ? 'success' : booking.status === 'active' ? 'info' : 'warning'} className="capitalize shadow-lg">
                       {booking.status}
                     </Badge>
                   </div>
@@ -223,9 +223,9 @@ const DashboardHome: React.FC = () => {
           </div>
         </Card>
 
-        <Card>
+        <Card className="card-hover shadow-xl border-0">
           <div className="p-6">
-            <h3 className="text-lg font-semibold mb-4">Recent Notifications</h3>
+            <h3 className="text-lg font-semibold mb-4 gradient-text">Recent Notifications</h3>
             {dashboardData.notifications.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <Bell size={32} className="mx-auto mb-2 text-gray-300" />
@@ -235,7 +235,7 @@ const DashboardHome: React.FC = () => {
               <div className="space-y-4">
                 {dashboardData.notifications.slice(0, 3).map((notification: any) => (
                   <div key={notification.id} className="flex items-start space-x-3">
-                    <div className={`w-2 h-2 rounded-full mt-2 ${notification.read ? 'bg-gray-300' : 'bg-blue-500'}`}></div>
+                    <div className={`w-2 h-2 rounded-full mt-2 ${notification.read ? 'bg-gray-300' : 'bg-gradient-to-r from-purple-500 to-pink-500 animate-pulse-glow'}`}></div>
                     <div className="flex-1">
                       <p className="font-medium text-gray-900 text-sm">{notification.title}</p>
                       <p className="text-xs text-gray-600">{notification.message}</p>
