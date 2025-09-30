@@ -35,43 +35,43 @@ const ToolCard: React.FC<ToolCardProps> = ({
   };
   return (
     <Card
-      variant="elevated"
+      variant="default"
       padding="none"
-      className="cursor-pointer transform hover:scale-105 transition-all duration-200 hover:shadow-lg"
+      className="cursor-pointer card-hover bg-white/80 backdrop-blur-sm border border-white/30 shadow-xl hover:shadow-2xl rounded-2xl overflow-hidden"
       onClick={handleViewTool}
     >
       <div className="relative">
         <img
           src={tool.images[0] || 'https://images.pexels.com/photos/209274/pexels-photo-209274.jpeg?auto=compress&cs=tinysrgb&w=800&h=600&dpr=1'}
           alt={tool.title}
-          className="w-full h-48 object-cover rounded-t-lg"
+          className="w-full h-48 object-cover"
         />
         <button
           onClick={handleFavoriteClick}
-          className="absolute top-3 right-3 p-2 bg-white rounded-full shadow-md hover:shadow-lg transition-shadow"
+          className="absolute top-3 right-3 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110"
         >
           <Heart
             size={18}
-            className={isFavorited ? 'fill-red-500 text-red-500' : 'text-gray-400'}
+            className={isFavorited ? 'fill-pink-500 text-pink-500' : 'text-gray-400'}
           />
         </button>
         
         {/* Status badges */}
         <div className="absolute top-3 left-3 flex flex-col space-y-1">
           {tool.insurance.available && (
-            <Badge variant="success" size="sm">
+            <Badge variant="success" size="sm" className="bg-gradient-to-r from-green-400 to-emerald-500 text-white border-0 shadow-lg">
               <Shield size={12} className="mr-1" />
               Insured
             </Badge>
           )}
           {tool.operatorSupport.available && (
-            <Badge variant="info" size="sm">
+            <Badge variant="info" size="sm" className="bg-gradient-to-r from-blue-400 to-cyan-500 text-white border-0 shadow-lg">
               <Wrench size={12} className="mr-1" />
               Operator
             </Badge>
           )}
           {tool.pricing.type === 'bidding' && (
-            <Badge variant="warning" size="sm">
+            <Badge variant="warning" size="sm" className="bg-gradient-to-r from-orange-400 to-yellow-500 text-white border-0 shadow-lg">
               <TrendingUp size={12} className="mr-1" />
               Bidding
             </Badge>
@@ -87,14 +87,14 @@ const ToolCard: React.FC<ToolCardProps> = ({
           <div className="text-right">
             {tool.pricing.type === 'fixed' ? (
               <div>
-                <p className="text-lg font-bold text-green-600">
+                <p className="text-lg font-bold bg-gradient-to-r from-green-500 to-emerald-600 bg-clip-text text-transparent">
                   {formatCurrency(tool.pricing.daily)}
                 </p>
                 <p className="text-sm text-gray-500">per day</p>
               </div>
             ) : (
               <div>
-                <p className="text-lg font-bold text-orange-600">
+                <p className="text-lg font-bold bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent">
                   {formatCurrency(tool.pricing.currentBid || 0)}
                 </p>
                 <p className="text-sm text-gray-500">current bid</p>
@@ -137,8 +137,8 @@ const ToolCard: React.FC<ToolCardProps> = ({
 
         <div className="mt-3 pt-3 border-t border-gray-200">
           <Button
-            variant="primary"
-            className="w-full"
+            variant="ghost"
+            className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300"
             onClick={(e) => {
               e.stopPropagation();
               handleViewTool();

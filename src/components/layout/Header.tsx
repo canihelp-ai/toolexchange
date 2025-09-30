@@ -149,7 +149,7 @@ const Header: React.FC = () => {
   };
 
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
+    <header className="glass-effect shadow-lg border-b border-white/20 sticky top-0 z-40 backdrop-blur-xl">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
@@ -157,7 +157,7 @@ const Header: React.FC = () => {
             <div className="flex-shrink-0">
               <button
                 onClick={() => navigate('/')}
-                className="text-xl font-bold text-blue-600 hover:text-blue-700 transition-colors"
+                className="text-2xl font-bold gradient-text hover:scale-105 transition-transform duration-300"
               >
                 ToolShare
               </button>
@@ -173,21 +173,21 @@ const Header: React.FC = () => {
                 value={headerSearchQuery}
                 onChange={(e) => setHeaderSearchQuery(e.target.value)}
                 leftIcon={<Search size={20} />}
-                className="pr-20 text-gray-900"
+                className="pr-20 text-gray-900 bg-white/80 backdrop-blur-sm border-white/30 focus:bg-white/90 transition-all duration-300"
               />
               <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center space-x-2">
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="p-2"
+                  className="p-2 hover:bg-white/20 transition-colors"
                 >
                   <Filter size={16} />
                 </Button>
                 <Button
                   type="submit"
                   size="sm"
-                  className="px-3"
+                  className="px-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 border-0 shadow-lg"
                 >
                   Search
                 </Button>
@@ -196,7 +196,7 @@ const Header: React.FC = () => {
                 <select
                   value={currency}
                   onChange={(e) => setCurrency(e.target.value as 'USD' | 'JMD')}
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  className="px-3 py-2 border border-white/30 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white/80 backdrop-blur-sm transition-all duration-300"
                 >
                   <option value="USD">USD ($)</option>
                   <option value="JMD">JMD (J$)</option>
@@ -213,12 +213,12 @@ const Header: React.FC = () => {
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className="p-2 relative"
+                  className="p-2 relative hover:bg-white/20 transition-colors rounded-full"
                   onClick={() => setIsNotificationsOpen(true)}
                 >
                   <Bell size={20} />
                   {unreadNotifications > 0 && (
-                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-pink-500 to-red-500 text-white text-xs rounded-full flex items-center justify-center animate-pulse-glow">
                       {unreadNotifications}
                     </span>
                   )}
@@ -228,12 +228,12 @@ const Header: React.FC = () => {
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className="p-2 relative"
+                  className="p-2 relative hover:bg-white/20 transition-colors rounded-full"
                   onClick={() => setIsMessagesOpen(true)}
                 >
                   <MessageCircle size={20} />
                   {unreadMessages > 0 && (
-                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 text-white text-xs rounded-full flex items-center justify-center">
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-green-400 to-blue-500 text-white text-xs rounded-full flex items-center justify-center animate-pulse-glow">
                       {unreadMessages}
                     </span>
                   )}
@@ -243,53 +243,53 @@ const Header: React.FC = () => {
                 <div className="relative">
                   <button
                     onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-                    className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                    className="flex items-center space-x-2 p-2 rounded-xl hover:bg-white/20 transition-all duration-300 backdrop-blur-sm"
                   >
                     <img
                       src={user.avatar_url || 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1'}
                       alt={user.name}
-                      className="w-8 h-8 rounded-full object-cover"
+                      className="w-8 h-8 rounded-full object-cover ring-2 ring-white/50 hover:ring-purple-400 transition-all duration-300"
                       onError={(e) => {
                         e.currentTarget.src = 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1';
                       }}
                     />
-                    <span className="text-sm font-medium text-gray-700">{user.name}</span>
+                    <span className="text-sm font-medium text-gray-800">{user.name}</span>
                   </button>
 
                   {isProfileMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                    <div className="absolute right-0 mt-2 w-48 glass-effect rounded-xl shadow-2xl border border-white/20 py-2 z-50 backdrop-blur-xl">
                       <button
                         onClick={() => handleProfileAction('home')}
-                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-white/20 transition-colors rounded-lg mx-1"
                       >
                         <Home size={16} className="mr-3" />
                         Home
                       </button>
                       <button
                         onClick={() => handleProfileAction('profile')}
-                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-white/20 transition-colors rounded-lg mx-1"
                       >
                         <User size={16} className="mr-3" />
                         Profile
                       </button>
                       <button
                         onClick={() => handleProfileAction('dashboard')}
-                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-white/20 transition-colors rounded-lg mx-1"
                       >
                         <Menu size={16} className="mr-3" />
                         Dashboard
                       </button>
                       <button
                         onClick={() => handleProfileAction('settings')}
-                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-white/20 transition-colors rounded-lg mx-1"
                       >
                         <Settings size={16} className="mr-3" />
                         Settings
                       </button>
-                      <hr className="my-2" />
+                      <hr className="my-2 border-white/20" />
                       <button
                         onClick={() => handleProfileAction('logout')}
-                        className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                        className="flex items-center w-full px-4 py-2 text-sm text-red-500 hover:bg-red-500/10 transition-colors rounded-lg mx-1"
                       >
                         <LogOut size={16} className="mr-3" />
                         Sign out
@@ -304,12 +304,14 @@ const Header: React.FC = () => {
                   variant="ghost"
                   onClick={() => setIsAuthModalOpen(true)}
                   data-auth-trigger
+                  className="hover:bg-white/20 transition-colors"
                 >
                   Sign in
                 </Button>
                 <Button
                   onClick={() => setIsAuthModalOpen(true)}
                   data-auth-trigger
+                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 border-0 shadow-lg"
                 >
                   Sign up
                 </Button>

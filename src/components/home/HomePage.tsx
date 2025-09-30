@@ -117,13 +117,20 @@ const HomePage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-16">
+      <div className="relative bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 text-white py-20 overflow-hidden">
+        {/* Animated background elements */}
+        <div className="absolute inset-0">
+          <div className="absolute top-10 left-10 w-72 h-72 bg-purple-500/20 rounded-full blur-3xl animate-float"></div>
+          <div className="absolute bottom-10 right-10 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }}></div>
+          <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl animate-float" style={{ animationDelay: '4s' }}></div>
+        </div>
+        
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
+          <div className="text-center relative z-10">
             <h1 className="text-4xl md:text-5xl font-bold mb-4">
               Find the Perfect Tool for Your Project
             </h1>
-            <p className="text-xl mb-8 text-blue-100">
+            <p className="text-xl mb-8 text-purple-100">
               Rent from thousands of tools, equipment, and skilled operators in your area
             </p>
             
@@ -136,13 +143,13 @@ const HomePage: React.FC = () => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   leftIcon={<Search size={20} />}
-                  className="text-lg py-4 pr-32 bg-white text-gray-900 placeholder-gray-500"
+                  className="text-lg py-4 pr-32 bg-white/90 backdrop-blur-sm text-gray-900 placeholder-gray-500 border-0 shadow-xl focus:bg-white transition-all duration-300"
                 />
                 <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
                   <Button
                     type="submit"
                     size="lg"
-                    className="px-8"
+                    className="px-8 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 border-0 shadow-xl hover:shadow-2xl transition-all duration-300"
                   >
                     Search
                   </Button>
@@ -158,13 +165,14 @@ const HomePage: React.FC = () => {
         <div className="flex flex-col md:flex-row justify-between items-center mb-6">
           <div className="flex items-center space-x-4 mb-4 md:mb-0">
             <Button
-              variant="outline"
+              variant="ghost"
               onClick={() => setIsFilterModalOpen(true)}
               leftIcon={<Filter size={18} />}
+              className="bg-white/80 backdrop-blur-sm border border-white/30 hover:bg-white/90 shadow-lg transition-all duration-300"
             >
               Filters
               {activeFiltersCount > 0 && (
-                <span className="ml-2 bg-blue-600 text-white text-xs rounded-full px-2 py-1">
+                <span className="ml-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs rounded-full px-2 py-1 shadow-lg">
                   {activeFiltersCount}
                 </span>
               )}
@@ -175,6 +183,7 @@ const HomePage: React.FC = () => {
                 variant={viewMode === 'grid' ? 'primary' : 'ghost'}
                 size="sm"
                 onClick={() => setViewMode('grid')}
+                className={viewMode === 'grid' ? 'bg-gradient-to-r from-purple-500 to-pink-500 border-0 shadow-lg' : 'bg-white/80 backdrop-blur-sm hover:bg-white/90'}
               >
                 <Grid size={16} />
               </Button>
@@ -182,6 +191,7 @@ const HomePage: React.FC = () => {
                 variant={viewMode === 'list' ? 'primary' : 'ghost'}
                 size="sm"
                 onClick={() => setViewMode('list')}
+                className={viewMode === 'list' ? 'bg-gradient-to-r from-purple-500 to-pink-500 border-0 shadow-lg' : 'bg-white/80 backdrop-blur-sm hover:bg-white/90'}
               >
                 <List size={16} />
               </Button>
@@ -195,7 +205,7 @@ const HomePage: React.FC = () => {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-2 border border-white/30 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white/80 backdrop-blur-sm shadow-lg transition-all duration-300"
             >
               <option value="relevance">Sort by Relevance</option>
               <option value="price_low">Price: Low to High</option>
