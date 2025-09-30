@@ -1,14 +1,23 @@
 import { format, formatDistanceToNow } from 'date-fns';
 
 export const formatDate = (date: string): string => {
+  if (!date) return '';
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return '';
   return format(new Date(date), 'MMM dd, yyyy');
 };
 
 export const formatDateTime = (date: string): string => {
+  if (!date) return '';
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return '';
   return format(new Date(date), 'MMM dd, yyyy h:mm a');
 };
 
 export const formatRelativeTime = (date: string): string => {
+  if (!date) return '';
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return '';
   return formatDistanceToNow(new Date(date), { addSuffix: true });
 };
 
