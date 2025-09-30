@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Filter, Search, Grid, List, ArrowUpDown } from 'lucide-react';
+import { Filter, Search, Grid2x2 as Grid, List, ArrowUpDown } from 'lucide-react';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 import ToolCard from './ToolCard';
