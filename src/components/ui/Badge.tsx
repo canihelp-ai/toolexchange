@@ -14,11 +14,11 @@ const Badge: React.FC<BadgeProps> = ({
   ...props
 }) => {
   const variants = {
-    default: 'bg-gray-100 text-gray-800',
-    success: 'bg-green-100 text-green-800',
-    warning: 'bg-yellow-100 text-yellow-800',
-    error: 'bg-red-100 text-red-800',
-    info: 'bg-blue-100 text-blue-800',
+    default: 'bg-gray-100/80 backdrop-blur-sm text-gray-800 border border-gray-200/50',
+    success: 'bg-gradient-to-r from-green-400 to-emerald-500 text-white shadow-lg',
+    warning: 'bg-gradient-to-r from-orange-400 to-yellow-500 text-white shadow-lg',
+    error: 'bg-gradient-to-r from-red-400 to-pink-500 text-white shadow-lg',
+    info: 'bg-gradient-to-r from-blue-400 to-cyan-500 text-white shadow-lg',
   };
 
   const sizes = {

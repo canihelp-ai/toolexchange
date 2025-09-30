@@ -14,9 +14,9 @@ const Card: React.FC<CardProps> = ({
   ...props
 }) => {
   const variants = {
-    default: 'bg-white rounded-lg shadow-sm border border-gray-200',
-    elevated: 'bg-white rounded-lg shadow-md border border-gray-200',
-    outlined: 'bg-white rounded-lg border-2 border-gray-200',
+    default: 'bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-white/30',
+    elevated: 'bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-white/40',
+    outlined: 'bg-white/80 backdrop-blur-sm rounded-2xl border-2 border-purple-200/50',
   };
 
   const paddings = {
